@@ -1,0 +1,8 @@
+#! /bin/bash
+if [ -d "build" ]; then
+  # Control will enter here if build-DIRECTORY exists.
+  (cd build >/dev/null 2>&1 && cmake .. "$@")
+else
+  (mkdir build && cd build >/dev/null 2>&1 && cmake .. "$@")
+fi
+
