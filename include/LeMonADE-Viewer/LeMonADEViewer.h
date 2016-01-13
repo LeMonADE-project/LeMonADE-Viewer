@@ -27,8 +27,6 @@ You should have received a copy of the GNU General Public License
 along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
-
-
 #ifndef LEMONADE_VIEWER_H
 #define LEMONADE_VIEWER_H
 
@@ -41,6 +39,10 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <stdlib.h> //system
 #include <map>
+#include <sstream>
+#include <cstring>
+
+
 
 #include <LeMonADE/analyzer/AbstractAnalyzer.h>
 #include <LeMonADE/updater/AbstractUpdater.h>
@@ -53,6 +55,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 #include <LeMonADE-Viewer/LeMonADEOpenGL.h>
 #include <LeMonADE-Viewer/LineParser.h>
 #include <LeMonADE-Viewer/LeMonADEViewerLineCommand.h>
+#include <LeMonADE-Viewer/LeMonADEViewerAboutWin.h>
 
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
@@ -98,10 +101,16 @@ public:
 	 std::cout << "cropped filename: " << cropFilename << std::endl;
  };
 
+ virtual ~LeMonADEViewer(){
+ 		delete winAbout;
+ 		delete winOpenGL;
+ 		delete window;
+ 	};
 
 
 private: Fl_Double_Window* window;
 		 LeMonADEOpenGL<IngredientsType>* winOpenGL;
+		 LeMonADEViewerAboutWin* winAbout;
 
 		 Fl_Button* B_ReverseWindingStart;
 		 Fl_Button* B_ReverseWinding;
@@ -221,7 +230,7 @@ public:
 	           o->tooltip("License Information");
 	           o->labelfont(FL_BOLD+FL_ITALIC);
 	           o->labelsize(22);
-	           o->callback(( Fl_Callback*)cb_pngscrennshot, this );
+	           o->callback(( Fl_Callback*)cb_license, this );
 	           /* @todo add license information window*/
 	         } // Fl_Button* o
 
@@ -413,6 +422,9 @@ public:
 	     winOpenGL->initialize();
 
 
+	     winAbout = new LeMonADEViewerAboutWin(600,600,"About LeMonADE-Viewer");
+
+
 	 /*    std::string a = std::string("!setColor");
 	     CommandSetColor<IngredientsType>* f = new CommandSetColor<IngredientsType>();
 
@@ -488,8 +500,8 @@ private:
  static void cb_povray( Fl_Button*, void* );
  inline void cb_povray_i( Fl_Button*, void* );
 
- static void cb_pngscrennshot( Fl_Button*, void* );
- inline void cb_pngscrennshot_i( Fl_Button*, void* );
+ static void cb_license( Fl_Button*, void* );
+ inline void cb_license_i( Fl_Button*, void* );
 
  static void cb_colorchooser( Fl_Button*, void* );
  inline void cb_colorchooser_i( Fl_Button*, void* );
@@ -664,17 +676,41 @@ void LeMonADEViewer<IngredientsType>::cb_povray_i( Fl_Button* , void* )
 	}
 
 template <class IngredientsType>
-void LeMonADEViewer<IngredientsType>::cb_pngscrennshot( Fl_Button* obj, void* v )
+void LeMonADEViewer<IngredientsType>::cb_license( Fl_Button* obj, void* v )
 {
 	//should be replace by the info -box
-	//	LeMonADEViewer<IngredientsType> * T=( LeMonADEViewer<IngredientsType>* )v;
-	//	T->cb_pngscrennshot_i(obj,v);
+	LeMonADEViewer<IngredientsType> * T=( LeMonADEViewer<IngredientsType>* )v;
+	T->cb_license_i(obj,v);
 
 }
 
 template <class IngredientsType>
-void LeMonADEViewer<IngredientsType>::cb_pngscrennshot_i( Fl_Button* , void* )
+void LeMonADEViewer<IngredientsType>::cb_license_i( Fl_Button* , void* )
 {
+	std::cout << "About LeMonADE-Viewer" << std::endl;
+	//const char *helpmsg = outputline.c_str();
+
+	/*static Fl_Double_Window *helpwin  = 0;
+	static Fl_Text_Display  *helpdisp = 0;
+	static Fl_Text_Buffer   *helpbuff = 0;
+	if ( !helpwin ) {
+	  Fl_Group::current(0);  // ensure we don't become child of other win
+	  helpwin = new Fl_Double_Window(600,600,"About LeMonADE-Viewer");
+	  helpdisp = new Fl_Text_Display(0,0,helpwin->w(),helpwin->h());
+	  helpbuff = new Fl_Text_Buffer();
+	  helpdisp->buffer(helpbuff);
+	  helpdisp->textfont(FL_COURIER);
+	  helpdisp->textsize(12);
+	  helpbuff->text(helpmsg);
+	  helpwin->end();
+	}*/
+	//winAbout->resizable(helpdisp);
+	//if ( !winAbout)
+
+		winAbout->showing();
+
+
+
 	// should be replace by the info -box
 	//   std::cout << "Create png: testimage.png" << std::endl;
 	//   winOpenGL->screenshoot("testimage.png");
