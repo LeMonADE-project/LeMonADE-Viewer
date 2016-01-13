@@ -60,8 +60,8 @@ public:
 	};
 
 	virtual ~LeMonADEViewerAboutWin(){
-		delete helpbuff;
-		delete helpdisp;
+		//delete helpbuff;
+		//delete helpdisp;
 	};
 
 	void showing()

@@ -134,6 +134,10 @@ private: Fl_Double_Window* window;
 		 Fl_Check_Button* CB_DrawSpheres;
 		 Fl_Spinner* S_DrawSpheresSubdivisionSpinner;
 
+		 Fl_Choice* Ch_PropertySchemeChoice;
+		 Fl_Choice* Ch_PropertyValueChoice;
+		 Fl_Choice* Ch_PropertyColorChoice;
+
 		 Fl_Text_Buffer *T_TextBuffer;
 		 Fl_Text_Display *T_TextDisplay;
 
@@ -178,7 +182,7 @@ public:
 
 	    cout <<"initialize FLTK"  << endl;
 
-	    window = new Fl_Double_Window(25,25,300, 585, "LeMonADEViewerMain");
+	    window = new Fl_Double_Window(25,25,300, 585+35, "LeMonADE-ViewerMain");
 	     {
 	       { Fl_Group* o = new Fl_Group(10, 15, 285, 50);
 	         { B_ReverseWindingStart = new Fl_Button(10, 22, 30, 30, "@|<");
@@ -343,13 +347,92 @@ public:
 	       	        S_DrawSpheresSubdivisionSpinner->tooltip("number of subdivision of sphere");
 	       	           S_DrawSpheresSubdivisionSpinner->callback(( Fl_Callback*)s_subdivision, this );
 	       	            } // Fl_Spinner* o
+
+
+
+	       	         { Ch_PropertySchemeChoice = new Fl_Choice(25, 350, 105, 35);
+	       	      Ch_PropertySchemeChoice->down_box(FL_BORDER_BOX);
+	       	   //Ch_PropertyChoice->labelsize(12);
+	       	//Ch_PropertyChoice->textsize(11);
+	       	           //o->callback((Fl_Callback*)cb_collapseicons_chooser);
+	       	Ch_PropertySchemeChoice->add("NONE");
+	       	Ch_PropertySchemeChoice->add("ColorAtt");
+	       	Ch_PropertySchemeChoice->add("ColorLinks");
+	    	Ch_PropertySchemeChoice->add("ColorGroup");
+	       	Ch_PropertySchemeChoice->value(0);
+	       	//Ch_PropertyChoice->menu(menu_collapseicons_chooser);
+	       	            } // Fl_Choice* o
+
+	       	      { Ch_PropertyValueChoice = new Fl_Choice(25+105, 350, 85, 35);
+	       	      	       	      Ch_PropertyValueChoice->down_box(FL_BORDER_BOX);
+	       	      	       	   //Ch_PropertyChoice->labelsize(12);
+	       	      	       	//Ch_PropertyChoice->textsize(11);
+	       	      	       	           //o->callback((Fl_Callback*)cb_collapseicons_chooser);
+	       	      	       	Ch_PropertyValueChoice->add("NONE");
+	       	      	       	Ch_PropertyValueChoice->add("0");
+	       	      	   Ch_PropertyValueChoice->add("1");
+	       	      	       	Ch_PropertyValueChoice->value(0);
+	       	      	       	//Ch_PropertyChoice->menu(menu_collapseicons_chooser);
+	       	      	       	            } // Fl_Choice* o
+
+	       	   { Ch_PropertyColorChoice = new Fl_Choice(25+105+85, 350, 85, 35);
+	       	   	       	      	       	      Ch_PropertyColorChoice->down_box(FL_BORDER_BOX);
+	       	   	       	      	       	   //Ch_PropertyChoice->labelsize(12);
+	       	   	       	      	       	//Ch_PropertyChoice->textsize(11);
+	       	   	       	      	   Ch_PropertyColorChoice->callback((Fl_Callback*)ch_propertycolorchooser, this);
+	       	   	       	      	       	Ch_PropertyColorChoice->add("NONE");
+	       	   	       	      	       	Ch_PropertyColorChoice->add("White");
+	       	   	       	      	       	Ch_PropertyColorChoice->add("Black");
+	       	   	       	      	       	Ch_PropertyColorChoice->add("Red");
+	       	   	       	      	       	Ch_PropertyColorChoice->add("Green");
+	       	   	       	      	       	Ch_PropertyColorChoice->add("Blue");
+	       	   	       	      	       	Ch_PropertyColorChoice->add("Yellow");
+	       	   	       	      	       	Ch_PropertyColorChoice->add("Magenta");
+	       	   	       	      	       	Ch_PropertyColorChoice->add("Cyan");
+	       	   	       	      	Ch_PropertyColorChoice->add("Orange");
+
+	       	   	       	      	       	Ch_PropertyColorChoice->value(0);
+
+	       	   	       	      	       	Fl_Menu_Item* array = const_cast<Fl_Menu_Item*>( Ch_PropertyColorChoice->menu() );
+
+	       	   	       	      	       	// Change color of added item to Red
+	       	   	       	      	//array[ 0 ].labelcolor (FL_NONE);
+	       	   	       	      	//array[ 1 ].labelcolor (FL_WHITE);
+	       	   	       	      	array[ 2 ].labelcolor (FL_BLACK);
+	       	   	       	array[ 3 ].labelcolor (FL_RED);
+	       	   		array[ 4 ].labelcolor (FL_GREEN);
+	       	   	array[ 5 ].labelcolor (FL_BLUE);
+	       	 array[ 6 ].labelcolor (FL_YELLOW);
+	       	array[ 7 ].labelcolor (FL_MAGENTA);
+	    	array[ 8 ].labelcolor (FL_CYAN);
+	    	array[ 9 ].labelcolor (fl_rgb_color(255,160,32));
+
+
+	       	   	       	      	for ( int t=0; t<Ch_PropertyColorChoice->menu()->size(); t++ ) {                // walk array of items
+	       	   	     //  	   Fl_Menu_Item *item;
+	       	   	     //item = (Fl_Menu_Item*)Ch_PropertyColorChoice->menu()[t];
+	       	 //  	Ch_PropertyColorChoice->menu()[t].labelcolor(FL_RED);
+	       	   	       	      		//const  Fl_Menu_Item &item = Ch_PropertyColorChoice->menu()[t];       // get each item
+	       	   	       	  // item->labelcolor(FL_RED);
+	       	   	       	      	   // fprintf(stderr, "item #%d -- label=%s, value=%s type=%s\n",
+	       	   	       	      	   //     t,
+	       	   	       	      	   //     item.label() ? item.label() : "(Null)",          // menu terminators have NULL labels
+	       	   	       	      	   //     (item.flags & FL_MENU_VALUE) ? "set" : "clear",  // value of toggle or radio items
+	       	   	       	      	   //     (item.flags & FL_SUBMENU) ? "Submenu" : "Item"); // see if item is a submenu or actual item
+	       	   	       	      	}
+
+	       	   	       	      	       	//Ch_PropertyChoice->menu(menu_collapseicons_chooser);
+	       	   	       	      	       	            } // Fl_Choice* o
+
+
+
 	       { T_TextBuffer = new Fl_Text_Buffer();
-	         T_TextDisplay = new Fl_Text_Display(25, 355, 250, 110);
+	         T_TextDisplay = new Fl_Text_Display(25, 355+35, 250, 110);
 	         T_TextDisplay->buffer(T_TextBuffer);
 	         T_TextDisplay->wrap_mode( Fl_Text_Display::WRAP_AT_BOUNDS,0);
 
 	           } // Fl_Text_Display* o
-	       { I_CommandInput = new Fl_Input(25, 492, 250, 43, "command:");
+	       { I_CommandInput = new Fl_Input(25, 492+35, 250, 43, "command:");
 	       	   I_CommandInput->align(Fl_Align(FL_ALIGN_TOP));
 
 
@@ -378,7 +461,7 @@ public:
 	       } // Fl_Input* o
 
 	       {
-	    	   I_FrameInput = new Fl_Int_Input(85, 540, 90, 24, "Frame");
+	    	   I_FrameInput = new Fl_Int_Input(85, 540+35, 90, 24, "Frame");
 	    	   I_FrameInput->labelsize(18);
 
 	    	   std::stringstream sd("");
@@ -396,7 +479,7 @@ public:
 
 	    	   std::cout<<sd.str() << std::endl;
 
-	    	   O_FrameMax = new Fl_Output(185, 540, 90, 24, "/");
+	    	   O_FrameMax = new Fl_Output(185, 540+35, 90, 24, "/");
 	    	   O_FrameMax->labelsize(18);
 	    	   O_FrameMax->value(sd.str().c_str());
 	           }
@@ -562,6 +645,9 @@ inline void  cb_drawSpheres_i( Fl_Check_Button*);
 
 static void  s_subdivision( Fl_Spinner*, void* );
 inline void  s_subdivision_i( Fl_Spinner*);
+
+static void  ch_propertycolorchooser(Fl_Choice*, void*);
+inline void  ch_propertycolorchooser_i(Fl_Choice*);
 
 static void  cb_changeCommandInput( Fl_Input*, void* );
 inline void  cb_changeCommandInput_i( Fl_Input*);
@@ -1132,6 +1218,73 @@ void LeMonADEViewer<IngredientsType>::calculateSmoothCoodinates()
 				  }
 }
 
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::ch_propertycolorchooser(Fl_Choice* obj, void* v)
+{
+	(( LeMonADEViewer<IngredientsType>* )v)->ch_propertycolorchooser_i(obj);
+}
+
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::ch_propertycolorchooser_i(Fl_Choice* obj)
+{
+	std::cout << "ch_propertycolorchooser_i" << std::endl;
+	std::cout << "State " <<  int(Ch_PropertyColorChoice->value()) << std::endl;
+
+	int valueCh_PropertyColorChoice = Ch_PropertyColorChoice->value();
+	// !setColorAttributes
+	// T_TextBuffer->append((CommandLineMap[1]->executeLineCommand(ingredients, linearGroupsVector, line)).c_str());
+	std::string command = "!setColorAttributes";
+	std::string line = "!setColorAttributes:1=";
+
+	/*
+	//array[ 1 ].labelcolor (FL_WHITE);
+		       	   	       	      	array[ 2 ].labelcolor (FL_BLACK);
+		       	   	       	array[ 3 ].labelcolor (FL_RED);
+		       	   		array[ 4 ].labelcolor (FL_GREEN);
+		       	   	array[ 5 ].labelcolor (FL_BLUE);
+		       	 array[ 6 ].labelcolor (FL_YELLOW);
+		       	array[ 7 ].labelcolor (FL_MAGENTA);
+		    	array[ 8 ].labelcolor (FL_CYAN);
+		 */
+	if(valueCh_PropertyColorChoice == 1)
+		line += "(1,1,1)";
+	if(valueCh_PropertyColorChoice == 2)
+			line += "(0,0,0)";
+
+	if(valueCh_PropertyColorChoice == 3)
+				line += "(1,0,0)";
+
+	if(valueCh_PropertyColorChoice == 4)
+					line += "(0,1,0)";
+
+	if(valueCh_PropertyColorChoice == 5)
+					line += "(0,0,1)";
+
+	if(valueCh_PropertyColorChoice == 6)
+					line += "(1,1,0)";
+
+	if(valueCh_PropertyColorChoice == 7)
+					line += "(1,0,1)";
+
+	if(valueCh_PropertyColorChoice == 8)
+					line += "(0,1,1)";
+
+	if(valueCh_PropertyColorChoice == 9)
+						line += "(1,0.6,0)";
+
+
+	if (CommandLineMap.find(command) != CommandLineMap.end())
+	     	{
+			CommandLineMap[command]->executeLineCommand(ingredients, linearGroupsVector, line);
+
+	     	}
+
+	//ingredients.setSubdivisionSpheres(uint8_t(S_DrawSpheresSubdivisionSpinner->value()));
+
+	//winOpenGL->precalculateSphere(ingredients.getSubdivisionSpheres(),ingredients.getSubdivisionSpheres());
+
+}
+
 
      template <class IngredientsType>
      void LeMonADEViewer<IngredientsType>::cb_changeCommandInput( Fl_Input* obj, void* v)
@@ -1153,6 +1306,7 @@ void LeMonADEViewer<IngredientsType>::calculateSmoothCoodinates()
      	std::cout << "command:" << std::endl;
      	std::cout << command << std::endl;
      	std::cout << "line:" << std::endl;
+     	std::cout << line << std::endl;
 
      	std::stringstream sd;
      	sd << std::endl << line << std::endl;
