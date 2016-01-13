@@ -1,0 +1,51 @@
+== INSTALL ==
+ 1.) Windows
+ 2.) Mac OS X
+ 3.) Linux
+ 
+ The executable "LeMonADE-Viewer" is located in the folder "build" after installation. 
+ 
+== Windows ==
+
+ ?
+ 
+== Mac OS X ==
+
+ Standard compilation (LeMonADE-Viewer):
+ ----------------------------------------------------
+ ./configure -DLEMONADE_DIR=/path/to/LeMonADE/
+ make
+ 
+ or
+ 
+ mkdir build
+ cd build
+ cmake -DLEMONADE_DIR=/path/to/LeMonADE/ ..
+ make
+ 
+ #after successful build
+ # rendering a test-bfm-file
+ cd build/
+ ./LeMonADE-Viewer ../test.bfm
+ 
+ 
+
+== Linux ==
+
+ Standard compilation (LeMonADE-Viewer):
+ ----------------------------------------------------
+ ./configure -DLEMONADE_DIR=/path/to/LeMonADE/
+ make
+ 
+ or
+ 
+ mkdir build
+ cd build
+ cmake -DLEMONADE_DIR=/path/to/LeMonADE/ ..
+ make
+ 
+ #after successful build
+ # rendering a test-bfm-file
+ cd build/
+ ./LeMonADE-Viewer ../test.bfm
+ 
