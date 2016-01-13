@@ -91,12 +91,11 @@ const std::string LeMonADEViewerAboutWin::getText() const
 			  * This text is copied from the LICENSE file
 			  */
 
-			 //const char *helpmsg =
-	//std::string msg="This directory contains the application LeMonADE-Viewer.\n";
+
 
 					 std::string msg=
 
-					 "This is the application LeMonADE-Viewer V1.0.0.\n"
+					 "This is the application LeMonADE-Viewer V1.1.0.\n"
 					 "==============================================="
 					 "\n"
 					 "The abbreviation \"LeMonADE\" stands for \n"
