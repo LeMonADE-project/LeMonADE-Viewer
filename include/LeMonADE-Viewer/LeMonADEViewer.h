@@ -41,6 +41,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 #include <sstream>
 #include <cstring>
+#include <set>
 
 
 
@@ -355,28 +356,55 @@ public:
 	       	   //Ch_PropertyChoice->labelsize(12);
 	       	//Ch_PropertyChoice->textsize(11);
 	       	           //o->callback((Fl_Callback*)cb_collapseicons_chooser);
-	       	Ch_PropertySchemeChoice->add("NONE");
+
+	       	      // @todo add coloring for other schemes
+	       	//Ch_PropertySchemeChoice->add("NONE");
 	       	Ch_PropertySchemeChoice->add("ColorAtt");
-	       	Ch_PropertySchemeChoice->add("ColorLinks");
-	    	Ch_PropertySchemeChoice->add("ColorGroup");
+	       	//Ch_PropertySchemeChoice->add("ColorLinks");
+	    	//Ch_PropertySchemeChoice->add("ColorGroup");
 	       	Ch_PropertySchemeChoice->value(0);
 	       	//Ch_PropertyChoice->menu(menu_collapseicons_chooser);
 	       	            } // Fl_Choice* o
 
-	       	      { Ch_PropertyValueChoice = new Fl_Choice(25+105, 350, 85, 35);
+	       	      {
+	       	    	  //dirty work-around to get all attributes in ingredients
+
+	       	    	std::set<int> myset;
+
+	       	    	for(uint32_t i = 0; i < ingredients.getMolecules().size(); i++)
+	       	    		myset.insert(ingredients.getMolecules()[i].getAttributeTag());
+
+	       	    	//myset.sort();
+
+	       	    	std::cout<< "num different attributes: " << myset.size()<< std::endl;
+
+	       	    	  Ch_PropertyValueChoice = new Fl_Choice(25+105, 350, 85, 35);
 	       	      	       	      Ch_PropertyValueChoice->down_box(FL_BORDER_BOX);
+
 	       	      	       	   //Ch_PropertyChoice->labelsize(12);
 	       	      	       	//Ch_PropertyChoice->textsize(11);
 	       	      	       	           //o->callback((Fl_Callback*)cb_collapseicons_chooser);
 	       	      	       	Ch_PropertyValueChoice->add("NONE");
-	       	      	       	Ch_PropertyValueChoice->add("0");
-	       	      	   Ch_PropertyValueChoice->add("1");
+
+	       	      	       	//add the other attributes
+	       	      	   for (std::set<int>::iterator it=myset.begin(); it!=myset.end(); ++it)
+	       	      	       {
+
+	       	      		   	   std::stringstream ss;
+	       	      		   	   ss << *it;
+	       	      		   	   Ch_PropertyValueChoice->add((ss.str()).c_str());
+	       	      		   	   std::cout << ' ' << *it;
+	       	      	       }
+
+
+
 	       	      	       	Ch_PropertyValueChoice->value(0);
 	       	      	       	//Ch_PropertyChoice->menu(menu_collapseicons_chooser);
 	       	      	       	            } // Fl_Choice* o
 
 	       	   { Ch_PropertyColorChoice = new Fl_Choice(25+105+85, 350, 85, 35);
 	       	   	       	      	       	      Ch_PropertyColorChoice->down_box(FL_BORDER_BOX);
+	       	   	       	      	   Ch_PropertyColorChoice->when(FL_WHEN_RELEASE|FL_WHEN_NOT_CHANGED);
 	       	   	       	      	       	   //Ch_PropertyChoice->labelsize(12);
 	       	   	       	      	       	//Ch_PropertyChoice->textsize(11);
 	       	   	       	      	   Ch_PropertyColorChoice->callback((Fl_Callback*)ch_propertycolorchooser, this);
@@ -547,6 +575,7 @@ public:
 	     startMessage << "periodic (" << (ingredients.isPeriodicX()?"true":"false") << ", " << (ingredients.isPeriodicY()?"true":"false") << "," << (ingredients.isPeriodicZ()?"true":"false") <<")" << std::endl;
 	     startMessage << "number monomers = " << ingredients.getMolecules().size()<< std::endl;
 	     startMessage << "number groups = " << linearGroupsVector.size()<< std::endl;
+	     startMessage << "type \"!help\" for all commands " << std::endl;
 
 	     T_TextBuffer->append(startMessage.str().c_str());
 
@@ -1231,21 +1260,18 @@ void LeMonADEViewer<IngredientsType>::ch_propertycolorchooser_i(Fl_Choice* obj)
 	std::cout << "State " <<  int(Ch_PropertyColorChoice->value()) << std::endl;
 
 	int valueCh_PropertyColorChoice = Ch_PropertyColorChoice->value();
-	// !setColorAttributes
-	// T_TextBuffer->append((CommandLineMap[1]->executeLineCommand(ingredients, linearGroupsVector, line)).c_str());
-	std::string command = "!setColorAttributes";
-	std::string line = "!setColorAttributes:1=";
 
-	/*
-	//array[ 1 ].labelcolor (FL_WHITE);
-		       	   	       	      	array[ 2 ].labelcolor (FL_BLACK);
-		       	   	       	array[ 3 ].labelcolor (FL_RED);
-		       	   		array[ 4 ].labelcolor (FL_GREEN);
-		       	   	array[ 5 ].labelcolor (FL_BLUE);
-		       	 array[ 6 ].labelcolor (FL_YELLOW);
-		       	array[ 7 ].labelcolor (FL_MAGENTA);
-		    	array[ 8 ].labelcolor (FL_CYAN);
-		 */
+	std::string stringCh_PropertyValueChoice = Ch_PropertyValueChoice->text();
+
+	std::string command = "!setColorAttributes";
+	//std::string line = "!setColorAttributes:"+Ch_PropertyValueChoice->value()+"=";
+
+
+	//std::string line = ss.str();
+	std::string line = "!setColorAttributes:"+stringCh_PropertyValueChoice+"=";
+
+
+
 	if(valueCh_PropertyColorChoice == 1)
 		line += "(1,1,1)";
 	if(valueCh_PropertyColorChoice == 2)
@@ -1272,6 +1298,8 @@ void LeMonADEViewer<IngredientsType>::ch_propertycolorchooser_i(Fl_Choice* obj)
 	if(valueCh_PropertyColorChoice == 9)
 						line += "(1,0.6,0)";
 
+
+	std::cout << line << std::endl;
 
 	if (CommandLineMap.find(command) != CommandLineMap.end())
 	     	{
