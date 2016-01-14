@@ -399,8 +399,12 @@ public:
 			std::cout << "color all monomers"<< std::endl;
 
 			for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+			{
 				if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
-				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
+					ingredients.modifyMolecules()[i].setColor( red ,green , blue);
+
+
+			}
 
 			return std::string("apply color to all monomers with numLinks");
 		//}

@@ -60,8 +60,8 @@ public:
 	};
 
 	virtual ~LeMonADEViewerAboutWin(){
-		delete helpbuff;
-		delete helpdisp;
+		//delete helpbuff;
+		//delete helpdisp;
 	};
 
 	void showing()
@@ -95,7 +95,7 @@ const std::string LeMonADEViewerAboutWin::getText() const
 
 					 std::string msg=
 
-					 "This is the application LeMonADE-Viewer V1.1.0.\n"
+					 "This is the application LeMonADE-Viewer V1.2.0.\n"
 					 "==============================================="
 					 "\n"
 					 "The abbreviation \"LeMonADE\" stands for \n"
@@ -121,11 +121,19 @@ const std::string LeMonADEViewerAboutWin::getText() const
 					 "\n"
 					 "You should have received a copy of the GNU General Public License\n"
 					 "along with this program.  If not, see <http://www.gnu.org/licenses/>.\n"
-					 " \n"
-					 "The subdirectory \"include/extern/\" contains third party software.\n"
-					 "PLEASE NOTE THAT THE SOFTWARE THERE IS COPYRIGHTED BY OTHERS THAN THE\n"
-					 "LeMonADE-Viewer AUTHORS, but is included by permission. For details, consult the\n"
-					 "stated licenses there.\n"
+					 "\n"
+					 "LeMonADE-Viewer Authors\n"
+					 "=========================\n"
+					 "\n"
+					 "Following people have long-term contributed to LeMonADE-Viewer\n"
+					 "and considered as principal developers (in alphabetical order):\n"
+					 "\n"
+					 "Principal developers:\n"
+					 "---------------------\n"
+					 "Ron Dockhorn, Germany\n"
+					 "\n"
+					 "These authors keep copyright of their contributions. They just grant\n"
+					 "a license to everyone to use it as detailed in LICENSE.\n"
 					 "\n"
 					 "----------------------------------------------------------------------\n"
 					 "\n"
