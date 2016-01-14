@@ -1,2 +1,8 @@
 * Release-1.0.0
 - stable viewer for showing the bfm-data file
+
+* Release-1.1.0
+- adding additional window for license
+
+* Release-1.2.0
+- adding widget FL_Choice for easy color change
