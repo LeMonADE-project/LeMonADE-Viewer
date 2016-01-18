@@ -39,77 +39,80 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 template<class IngredientsType, class MoleculesType>
 class LineCommandBase
 {
-
-
 public:
+
 	virtual ~LineCommandBase(){};
-    virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& str)=0;
-    //virtual std::string executeLineCommand( std::stringstream& sstrm)=0;
 
+	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& str)=0;
 
-    std::vector<std::string> tokenize1Parameter(const std::string& str,
-    		char delim) {
-    	std::vector<std::string> tokens;
-    	std::stringstream mySstream(str);
-    	std::string temp;
+	std::vector<std::string> tokenize1Parameter(const std::string& str,
+			char delim) {
+		std::vector<std::string> tokens;
+		std::stringstream mySstream(str);
+		std::string temp;
 
-    	while (getline(mySstream, temp, delim)) {
-    		tokens.push_back(temp);
-    	}
+		while (getline(mySstream, temp, delim)) {
+			tokens.push_back(temp);
+		}
 
-    	return tokens;
+		return tokens;
 
-    }
+	}
 
-    std::vector<std::string> tokenize2Parameter(const std::string& str,	char delim1, char delim2) {
-           	std::vector<std::string> tokens;
-           	std::stringstream mySstream(str);
-           	std::string temp;
+	std::vector<std::string> tokenize2Parameter(const std::string& str,	char delim1, char delim2) {
+		std::vector<std::string> tokens;
+		std::stringstream mySstream(str);
+		std::string temp;
 
-           	while (getline(mySstream, temp, delim1)) {
+		while (getline(mySstream, temp, delim1)) {
 
-           		if(temp.size() != 0)
-           		{
-           			std::stringstream mySstream2(temp);
-           			std::string temp2;
-           			while (getline(mySstream2, temp2, delim2)) {
-           				//printf("%s \n", temp2.c_str());
-           				if(temp2.size() != 0)
-           					tokens.push_back(temp2);
-           			}
-           		}
+			if(temp.size() != 0)
+			{
+				std::stringstream mySstream2(temp);
+				std::string temp2;
+				while (getline(mySstream2, temp2, delim2)) {
+					//printf("%s \n", temp2.c_str());
+					if(temp2.size() != 0)
+						tokens.push_back(temp2);
+				}
+			}
 
-           	}
+		}
 
-           	return tokens;
+		return tokens;
 
-           }
+	}
 
-    std::vector<std::string> tokenize3Parameter(const std::string& str,
-    		char delim1, char delim2, char delim3) {
-    	std::vector<std::string> tokens;
-    	std::stringstream mySstream(str);
-    	std::string temp;
+	std::vector<std::string> tokenize3Parameter(const std::string& str,
+			char delim1, char delim2, char delim3) {
+		std::vector<std::string> tokens;
+		std::stringstream mySstream(str);
+		std::string temp;
 
-    	while (getline(mySstream, temp, delim1)) {
-    		std::stringstream mySstream2(temp);
-    		std::string temp2;
-    		while (getline(mySstream2, temp2, delim2)) {
-    			std::stringstream mySstream3(temp2);
-    			std::string temp3;
-    			while (getline(mySstream3, temp3, delim3)) {
+		while (getline(mySstream, temp, delim1)) {
+			std::stringstream mySstream2(temp);
+			std::string temp2;
+			while (getline(mySstream2, temp2, delim2)) {
+				std::stringstream mySstream3(temp2);
+				std::string temp3;
+				while (getline(mySstream3, temp3, delim3)) {
 
-    				//printf("%s \n", temp2.c_str());
-    				tokens.push_back(temp3);
-    			}
-    		}
+					//printf("%s \n", temp2.c_str());
+					tokens.push_back(temp3);
+				}
+			}
 
-    	}
+		}
 
-    	return tokens;
+		return tokens;
 
-    }
+	}
 };
+
+// handles
+// !setColor:idx1-idx2=(r,g,b)
+// !setColor:all=(r,g,b)
+// !setColor:BG=(r,g,b)
 
 template<class IngredientsType, class MoleculesType>
 class CommandSetColor : public LineCommandBase<IngredientsType, MoleculesType>
@@ -118,13 +121,7 @@ public:
 	virtual ~CommandSetColor(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetColor in CommandSetColor " << std::endl;
-
-		// !setColor:mono1-mono2=(red, green, blue)
-		// !setColor:all=(red, green, blue)
-
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
@@ -145,10 +142,6 @@ public:
 			return std::string("error in command !setColor:color");
 
 
-		//float red = atof(color[0].c_str());
-		//float green = atof(color[1].c_str());
-		//float blue = atof(color[2].c_str());
-
 		float red = 0.0f;
 		float green = 0.0f;
 		float blue = 0.0f;
@@ -159,40 +152,48 @@ public:
 		//first mono index is wrong
 		if(ccRed.fail()){
 			return std::string("error in command !setColor:red color");
-			}
+		}
 
 		std::istringstream ccGreen(color[1]);
-				ccGreen >> green;
+		ccGreen >> green;
 
-				//first mono index is wrong
-				if(ccGreen.fail()){
-					return std::string("error in command !setColor:green color");
-					}
+		//first mono index is wrong
+		if(ccGreen.fail()){
+			return std::string("error in command !setColor:green color");
+		}
 
 		std::istringstream ccBlue(color[2]);
 		ccBlue >> blue;
 
-				//first mono index is wrong
-				if(ccBlue.fail()){
-					return std::string("error in command !setColor:blue color");
-					}
+		//first mono index is wrong
+		if(ccBlue.fail()){
+			return std::string("error in command !setColor:blue color");
+		}
 
 		//color all monomers
 		if(mono.size()==1 && (!mono[0].compare("all")))
 		{
-			std::cout << "color all monomers"<< std::endl;
+			//std::cout << "color all monomers"<< std::endl;
 
 			for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
 				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
 
-			return std::string("apply color all monomers");
+			return std::string("apply color to all monomers");
+		}
+
+		//color the background
+		if(mono.size()==1 && (!mono[0].compare("BG")))
+		{
+			//std::cout << "color BG"<< std::endl;
+			//set background color
+			ingredients.setBGcolor(red, green, blue);
+
+			return std::string("apply color to BG");
 		}
 
 		// label monomer in range
 		if(mono.size()==2)
 		{
-			//uint32_t mono1 = atoi(mono[0].c_str());
-			//uint32_t mono2 = atoi(mono[1].c_str());
 
 			uint32_t mono1 = 0;
 			uint32_t mono2 = 0;
@@ -203,39 +204,38 @@ public:
 			//first mono index is wrong
 			if(ss1.fail()){
 				return std::string("error in command !setColor:1.st monomer index");
-			    }
+			}
 
 			if(mono1 >= ingredients.modifyMolecules().size())
 			{
 				return std::string("error in command !setColor: out-of-range 1.st monomer index");
-						   }
+			}
 
 			std::istringstream ss2(mono[1]);
 			ss2 >> mono2;
 
 			if(mono2 >= ingredients.modifyMolecules().size())
-								{
-									return std::string("error in command !setColor: out-of-range 2.nd monomer index");
-											   }
+			{
+				return std::string("error in command !setColor: out-of-range 2.nd monomer index");
+			}
 			//first mono index is wrong
 			if(ss1.fail()){
 				return std::string("error in command !setColor:2.st monomer index");
 			}
 
-
 			if(mono1 < mono2)
 			{
-			for(uint32_t i = mono1; i <= mono2; i++)
-				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
+				for(uint32_t i = mono1; i <= mono2; i++)
+					ingredients.modifyMolecules()[i].setColor( red ,green , blue);
 			}
 			else
-				{for(uint32_t i = mono2; i <= mono1; i++)
-			ingredients.modifyMolecules()[i].setColor( red ,green , blue);
-				}
+			{for(uint32_t i = mono2; i <= mono1; i++)
+				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
+			}
 
 			return std::string("apply color monomers");
 		}
-		return std::string("could not color monomers");
+		return std::string("could not color anything");
 	}
 };
 
@@ -246,13 +246,8 @@ public:
 	virtual ~CommandSetColorAttributes(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetColor in CommandSetColorAttributes " << std::endl;
-
-		// !setColorAttributes:att=(red, green, blue)
-		// !setColorAttributes:all=(red, green, blue)
-
+		//std::cout << "!SetColor in CommandSetColorAttributes " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
@@ -262,23 +257,18 @@ public:
 		int32_t attribute=0;
 
 		std::istringstream ccAtt(vex[1]);
-				ccAtt >> attribute;
+		ccAtt >> attribute;
 
 		//attribute is wrong
-			if(ccAtt.fail()){
-					return std::string("error in command !setColorAttributes: attribute");
-				}
+		if(ccAtt.fail()){
+			return std::string("error in command !setColorAttributes: attribute");
+		}
 
 		//get color information
 		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
 
 		if(color.size() !=3 )
 			return std::string("error in command !setColorAttributes:color");
-
-
-		//float red = atof(color[0].c_str());
-		//float green = atof(color[1].c_str());
-		//float blue = atof(color[2].c_str());
 
 		float red = 0.0f;
 		float green = 0.0f;
@@ -290,36 +280,30 @@ public:
 		//first mono index is wrong
 		if(ccRed.fail()){
 			return std::string("error in command !setColorAttributes:red color");
-			}
+		}
 
 		std::istringstream ccGreen(color[1]);
-				ccGreen >> green;
+		ccGreen >> green;
 
-				//first mono index is wrong
-				if(ccGreen.fail()){
-					return std::string("error in command !setColorAttributes:green color");
-					}
+		//first mono index is wrong
+		if(ccGreen.fail()){
+			return std::string("error in command !setColorAttributes:green color");
+		}
 
 		std::istringstream ccBlue(color[2]);
 		ccBlue >> blue;
 
-				//first mono index is wrong
-				if(ccBlue.fail()){
-					return std::string("error in command !setColorAttributes:blue color");
-					}
+		//first mono index is wrong
+		if(ccBlue.fail()){
+			return std::string("error in command !setColorAttributes:blue color");
+		}
 
 		//color all monomers
-		//if(mono.size()==1 && (!mono[0].compare("all")))
-		//{
-			std::cout << "color all monomers"<< std::endl;
-
-			for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
-				if(ingredients.modifyMolecules()[i].getAttributeTag() == attribute)
+		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+			if(ingredients.modifyMolecules()[i].getAttributeTag() == attribute)
 				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
 
-			return std::string("apply color to all monomers with attribute");
-		//}
-		//return std::string("could not color monomers with attribute");
+		return std::string("apply color to all monomers with attribute");
 	}
 };
 
@@ -331,13 +315,8 @@ public:
 	virtual ~CommandSetColorLinks(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetColor in CommandSetColorLinks " << std::endl;
-
-		// !setColorAttributes:att=(red, green, blue)
-		// !setColorAttributes:all=(red, green, blue)
-
+		//std::cout << "!SetColor in CommandSetColorLinks " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
@@ -347,23 +326,18 @@ public:
 		int32_t numLinks=0;
 
 		std::istringstream ccLinks(vex[1]);
-				ccLinks >> numLinks;
+		ccLinks >> numLinks;
 
 		//numLinks is wrong
-			if(ccLinks.fail()){
-					return std::string("error in command !setColorLinks: numLinks");
-				}
+		if(ccLinks.fail()){
+			return std::string("error in command !setColorLinks: numLinks");
+		}
 
 		//get color information
 		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
 
 		if(color.size() !=3 )
 			return std::string("error in command !setColorLinks:color");
-
-
-		//float red = atof(color[0].c_str());
-		//float green = atof(color[1].c_str());
-		//float blue = atof(color[2].c_str());
 
 		float red = 0.0f;
 		float green = 0.0f;
@@ -375,42 +349,37 @@ public:
 		//first mono index is wrong
 		if(ccRed.fail()){
 			return std::string("error in command !setColorLinks:red color");
-			}
+		}
 
 		std::istringstream ccGreen(color[1]);
-				ccGreen >> green;
+		ccGreen >> green;
 
-				//first mono index is wrong
-				if(ccGreen.fail()){
-					return std::string("error in command !setColorLinks:green color");
-					}
+		//first mono index is wrong
+		if(ccGreen.fail()){
+			return std::string("error in command !setColorLinks:green color");
+		}
 
 		std::istringstream ccBlue(color[2]);
 		ccBlue >> blue;
 
-				//first mono index is wrong
-				if(ccBlue.fail()){
-					return std::string("error in command !setColorLinks:blue color");
-					}
+		//first mono index is wrong
+		if(ccBlue.fail()){
+			return std::string("error in command !setColorLinks:blue color");
+		}
 
 		//color all monomers
-		//if(mono.size()==1 && (!mono[0].compare("all")))
-		//{
-			std::cout << "color all monomers"<< std::endl;
-
-			for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
-			{
-				if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
-					ingredients.modifyMolecules()[i].setColor( red ,green , blue);
 
 
-			}
+		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+		{
+			if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
+				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
+		}
 
-			return std::string("apply color to all monomers with numLinks");
-		//}
-		//return std::string("could not color monomers with attribute");
+		return std::string("apply color to all monomers with numLinks");
 	}
 };
+
 
 template<class IngredientsType, class MoleculesType>
 class CommandSetVisible : public LineCommandBase<IngredientsType, MoleculesType>
@@ -419,21 +388,14 @@ public:
 	virtual ~CommandSetVisible(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetVisible in CommandSetVisible " << std::endl;
-
-		// !setVisibler:mono1-mono2=0/1
-		// !setVisible:all=0/1
-
+		//std::cout << "!SetVisible in CommandSetVisible " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
 		if(vex.size() !=3 )
 			return std::string("error in command !setVisible");
 
-		for(int i = 0; i < vex.size(); i++)
-			std::cout << "vex[i]: " << vex[i] << std::endl;
 		//get monomer information
 		std::vector<std::string> mono = LineCommandBase<IngredientsType, MoleculesType>::tokenize1Parameter(vex[1], '-');
 
@@ -444,16 +406,13 @@ public:
 		//get visibility information
 		int visible =0;
 
-
-
 		std::istringstream ccVisible(vex[2]);
 		ccVisible >> visible;
 
-		std::cout << "visible: " << visible << std::endl;
 		//first mono index is wrong
 		if(ccVisible.fail()){
 			return std::string("error in command !setVisible: visibility");
-			}
+		}
 
 		//color all monomers
 		if(mono.size()==1 && (!mono[0].compare("all")))
@@ -469,9 +428,6 @@ public:
 		// label monomer in range
 		if(mono.size()==2)
 		{
-			//uint32_t mono1 = atoi(mono[0].c_str());
-			//uint32_t mono2 = atoi(mono[1].c_str());
-
 			uint32_t mono1 = 0;
 			uint32_t mono2 = 0;
 
@@ -481,12 +437,12 @@ public:
 			//first mono index is wrong
 			if(ss1.fail()){
 				return std::string("error in command !setColor:1.st monomer index");
-			    }
+			}
 
 			if(mono1 >= ingredients.modifyMolecules().size())
 			{
 				return std::string("error in command !setColor: out-of-range 1.st monomer index");
-						   }
+			}
 
 			std::istringstream ss2(mono[1]);
 			ss2 >> mono2;
@@ -497,19 +453,19 @@ public:
 			}
 
 			if(mono2 >= ingredients.modifyMolecules().size())
-						{
-							return std::string("error in command !setColor: out-of-range 2.nd monomer index");
-									   }
+			{
+				return std::string("error in command !setColor: out-of-range 2.nd monomer index");
+			}
 
 			if(mono1 < mono2)
 			{
-			for(uint32_t i = mono1; i <= mono2; i++)
-				ingredients.modifyMolecules()[i].setVisible(bool(visible));
+				for(uint32_t i = mono1; i <= mono2; i++)
+					ingredients.modifyMolecules()[i].setVisible(bool(visible));
 			}
 			else
-				{for(uint32_t i = mono2; i <= mono1; i++)
-			ingredients.modifyMolecules()[i].setVisible(bool(visible));
-				}
+			{for(uint32_t i = mono2; i <= mono1; i++)
+				ingredients.modifyMolecules()[i].setVisible(bool(visible));
+			}
 
 			return std::string("apply visibility to monomers");
 		}
@@ -524,13 +480,8 @@ public:
 	virtual ~CommandSetVisibleAttributes(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetVisible in CommandSetVisibleAttributes " << std::endl;
-
-		// !setColorAttributes:att=(red, green, blue)
-		// !setColorAttributes:all=(red, green, blue)
-
+		//std::cout << "!SetVisible in CommandSetVisibleAttributes " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
@@ -540,36 +491,30 @@ public:
 		int32_t attribute=0;
 
 		std::istringstream ccAtt(vex[1]);
-				ccAtt >> attribute;
+		ccAtt >> attribute;
 
 		//attribute is wrong
-			if(ccAtt.fail()){
-					return std::string("error in command !setColorAttributes: attribute");
-				}
+		if(ccAtt.fail()){
+			return std::string("error in command !setColorAttributes: attribute");
+		}
 
-			//get visibility information
-					int visible =0;
+		//get visibility information
+		int visible =0;
+
+		std::istringstream ccVisible(vex[2]);
+		ccVisible >> visible;
+
+		if(ccVisible.fail()){
+			return std::string("error in command !setVisibleAttributes: Visibility");
+		}
 
 
 
-					std::istringstream ccVisible(vex[2]);
-					ccVisible >> visible;
-
-					if(ccVisible.fail()){
-										return std::string("error in command !setVisibleAttributes: Visibility");
-									}
-
-					std::cout << "visible: " << visible << std::endl;
-
-			std::cout << "color all monomers"<< std::endl;
-
-			for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
-				if(ingredients.modifyMolecules()[i].getAttributeTag() == attribute)
+		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+			if(ingredients.modifyMolecules()[i].getAttributeTag() == attribute)
 				ingredients.modifyMolecules()[i].setVisible( (bool(visible)));
 
-			return std::string("apply visiblility to all monomers with attribute");
-		//}
-		//return std::string("could not color monomers with attribute");
+		return std::string("apply visiblility to all monomers with attribute");
 	}
 };
 
@@ -580,13 +525,8 @@ public:
 	virtual ~CommandSetVisibleLinks(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetVisible in CommandSetVisibleLinks " << std::endl;
-
-		// !setColorAttributes:att=(red, green, blue)
-		// !setColorAttributes:all=(red, green, blue)
-
+		//std::cout << "!SetVisible in CommandSetVisibleLinks " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
@@ -596,36 +536,28 @@ public:
 		int32_t numLinks=0;
 
 		std::istringstream ccLinks(vex[1]);
-				ccLinks >> numLinks;
+		ccLinks >> numLinks;
 
 		//attribute is wrong
-			if(ccLinks.fail()){
-					return std::string("error in command !setColorLinks: numLinks");
-				}
+		if(ccLinks.fail()){
+			return std::string("error in command !setColorLinks: numLinks");
+		}
 
-			//get visibility information
-					int visible =0;
+		//get visibility information
+		int visible =0;
 
+		std::istringstream ccVisible(vex[2]);
+		ccVisible >> visible;
 
+		if(ccVisible.fail()){
+			return std::string("error in command !setVisibleLinks: Visibility");
+		}
 
-					std::istringstream ccVisible(vex[2]);
-					ccVisible >> visible;
-
-					if(ccVisible.fail()){
-										return std::string("error in command !setVisibleLinks: Visibility");
-									}
-
-					std::cout << "visible: " << visible << std::endl;
-
-			std::cout << "color all monomers"<< std::endl;
-
-			for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
-				if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
+		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+			if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
 				ingredients.modifyMolecules()[i].setVisible( (bool(visible)));
 
-			return std::string("apply visiblility to all monomers with attribute");
-		//}
-		//return std::string("could not color monomers with attribute");
+		return std::string("apply visiblility to all monomers with attribute");
 	}
 };
 
@@ -636,12 +568,8 @@ public:
 	virtual ~CommandSetColorVisibility(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetColor in CommandSetColorVisibility " << std::endl;
-
-		// !setColorVisibility:Visibility=(red, green, blue)
-
+		//std::cout << "!SetColor in CommandSetColorVisibility " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
@@ -651,12 +579,12 @@ public:
 		int32_t Visibility=0;
 
 		std::istringstream ccVis(vex[1]);
-				ccVis >> Visibility;
+		ccVis >> Visibility;
 
 		//attribute is wrong
-			if(ccVis.fail()){
-					return std::string("error in command !setColorVisibility: Visibility");
-				}
+		if(ccVis.fail()){
+			return std::string("error in command !setColorVisibility: Visibility");
+		}
 
 		//get color information
 		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
@@ -664,10 +592,6 @@ public:
 		if(color.size() !=3 )
 			return std::string("error in command !setColorVisibility: Color");
 
-
-		//float red = atof(color[0].c_str());
-		//float green = atof(color[1].c_str());
-		//float blue = atof(color[2].c_str());
 
 		float red = 0.0f;
 		float green = 0.0f;
@@ -679,36 +603,30 @@ public:
 		//first mono index is wrong
 		if(ccRed.fail()){
 			return std::string("error in command !setColorVisibility:red color");
-			}
+		}
 
 		std::istringstream ccGreen(color[1]);
-				ccGreen >> green;
+		ccGreen >> green;
 
-				//first mono index is wrong
-				if(ccGreen.fail()){
-					return std::string("error in command !setColorVisibility:green color");
-					}
+		//first mono index is wrong
+		if(ccGreen.fail()){
+			return std::string("error in command !setColorVisibility:green color");
+		}
 
 		std::istringstream ccBlue(color[2]);
 		ccBlue >> blue;
 
-				//first mono index is wrong
-				if(ccBlue.fail()){
-					return std::string("error in command !setColorVisibility:blue color");
-					}
+		//first mono index is wrong
+		if(ccBlue.fail()){
+			return std::string("error in command !setColorVisibility:blue color");
+		}
 
-		//color all monomers
-		//if(mono.size()==1 && (!mono[0].compare("all")))
-		//{
-			std::cout << "color all monomers"<< std::endl;
 
-			for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
-				if(ingredients.modifyMolecules()[i].isVisible() == (bool(Visibility)))
+		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+			if(ingredients.modifyMolecules()[i].isVisible() == (bool(Visibility)))
 				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
 
-			return std::string("apply color to all (in)visible monomers ");
-		//}
-		//return std::string("could not color monomers with attribute");
+		return std::string("apply color to all (in)visible monomers ");
 	}
 };
 
@@ -719,13 +637,8 @@ public:
 	virtual ~CommandSetVisibleGroups(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetVisible in CommandSetVisibleGroups " << std::endl;
-
-		// !setColorAttributes:att=(red, green, blue)
-		// !setColorAttributes:all=(red, green, blue)
-
+		//std::cout << "!SetVisible in CommandSetVisibleGroups " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 4 tokens
@@ -737,86 +650,68 @@ public:
 
 		//mono index has 1 or 2 tokens
 		if((Groups.size() != 2) )
-		return std::string("error in command !setVisible: monomer index");
+			return std::string("error in command !setVisible: monomer index");
 
 		uint32_t group1 = 0;
-					uint32_t group2 = 0;
+		uint32_t group2 = 0;
 
-					std::istringstream ss1(Groups[0]);
-					ss1 >> group1;
+		std::istringstream ss1(Groups[0]);
+		ss1 >> group1;
 
-					//first mono index is wrong
-					if(ss1.fail()){
-						return std::string("error in command !setColor:1.st group index");
-					    }
+		//first mono index is wrong
+		if(ss1.fail()){
+			return std::string("error in command !setColor:1.st group index");
+		}
 
-					if((group1 < 0) || (group1 >= molecules_type.size()))
-					{
-						return std::string("error in command !setColor: out-of-range 1.st group index");
-								   }
+		if((group1 < 0) || (group1 >= molecules_type.size()))
+		{
+			return std::string("error in command !setColor: out-of-range 1.st group index");
+		}
 
-					std::istringstream ss2(Groups[1]);
-					ss2 >> group2;
+		std::istringstream ss2(Groups[1]);
+		ss2 >> group2;
 
-					//first mono index is wrong
-					if(ss1.fail()){
-						return std::string("error in command !setColor: 2.st group index");
-					}
+		//first mono index is wrong
+		if(ss1.fail()){
+			return std::string("error in command !setColor: 2.st group index");
+		}
 
-					if((group2 < 0) || (group2 >= molecules_type.size()))
-								{
-									return std::string("error in command !setColor: out-of-range 2.nd monomer index");
-											   }
-
-
-
-
+		if((group2 < 0) || (group2 >= molecules_type.size()))
+		{
+			return std::string("error in command !setColor: out-of-range 2.nd monomer index");
+		}
 
 		//get visibility information
-							int visible =0;
+		int visible =0;
+
+		std::istringstream ccGroup(vex[2]);
+		ccGroup >> visible;
+
+		if(ccGroup.fail()){
+			return std::string("error in command !setVisibleGroups: Visibility");
+		}
 
 
 
-							std::istringstream ccGroup(vex[2]);
-							ccGroup >> visible;
-
-							if(ccGroup.fail()){
-												return std::string("error in command !setVisibleGroups: Visibility");
-											}
-
-							std::cout << "visible: " << visible << std::endl;
+		if(group1 < group2)
+		{
+			for(uint32_t i = group1; i <= group2; i++)
+				for(size_t m=0; m< molecules_type[i].size(); ++m)
+					ingredients.modifyMolecules()[molecules_type[i].trueIndex(m)].setVisible( (bool(visible)));
 
 
-		//color all monomers
-		//if(mono.size()==1 && (!mono[0].compare("all")))
-		//{
-			std::cout << "visible all monomers whithin group"<< std::endl;
+		}
+		else
+		{
+			for(uint32_t i = group2; i <= group1; i++)
+				for(size_t m=0; m< molecules_type[i].size(); ++m)
+					ingredients.modifyMolecules()[molecules_type[i].trueIndex(m)].setVisible( (bool(visible)));
 
-			if(group1 < group2)
-			{
-				for(uint32_t i = group1; i <= group2; i++)
-					for(size_t m=0; m< molecules_type[i].size(); ++m)
-						ingredients.modifyMolecules()[molecules_type[i].trueIndex(m)].setVisible( (bool(visible)));
+		}
 
+		return std::string("visible color to all monomers within Groups");
 
-			}
-			else
-				{
-					for(uint32_t i = group2; i <= group1; i++)
-					for(size_t m=0; m< molecules_type[i].size(); ++m)
-							ingredients.modifyMolecules()[molecules_type[i].trueIndex(m)].setVisible( (bool(visible)));
-
-				}
-
-
-
-
-			return std::string("visible color to all monomers within Groups");
-		//}
-		//return std::string("could not color monomers with attribute");
 	}
-
-
 };
 
 template<class IngredientsType, class MoleculesType>
@@ -826,13 +721,8 @@ public:
 	virtual ~CommandSetColorGroups(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetColor in CommandSetColorGroups " << std::endl;
-
-		// !setColorAttributes:att=(red, green, blue)
-		// !setColorAttributes:all=(red, green, blue)
-
+		//std::cout << "!SetColor in CommandSetColorGroups " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
@@ -841,15 +731,13 @@ public:
 
 		int32_t group=0;
 
-		//color all monomers
-
 		std::istringstream ccGroup(vex[1]);
-				ccGroup >> group;
+		ccGroup >> group;
 
 		//Group is wrong
-			if(ccGroup.fail()){
-					return std::string("error in command !setColorGroups: Groups");
-				}
+		if(ccGroup.fail()){
+			return std::string("error in command !setColorGroups: Groups");
+		}
 
 		if((group < 0) || (group >= molecules_type.size()))
 		{
@@ -863,10 +751,6 @@ public:
 			return std::string("error in command !setColorGroups:color");
 
 
-		//float red = atof(color[0].c_str());
-		//float green = atof(color[1].c_str());
-		//float blue = atof(color[2].c_str());
-
 		float red = 0.0f;
 		float green = 0.0f;
 		float blue = 0.0f;
@@ -877,40 +761,33 @@ public:
 		//first mono index is wrong
 		if(ccRed.fail()){
 			return std::string("error in command !setColorGroups:red color");
-			}
+		}
 
 		std::istringstream ccGreen(color[1]);
-				ccGreen >> green;
+		ccGreen >> green;
 
-				//first mono index is wrong
-				if(ccGreen.fail()){
-					return std::string("error in command !setColorGroups:green color");
-					}
+		//first mono index is wrong
+		if(ccGreen.fail()){
+			return std::string("error in command !setColorGroups:green color");
+		}
 
 		std::istringstream ccBlue(color[2]);
 		ccBlue >> blue;
 
-				//first mono index is wrong
-				if(ccBlue.fail()){
-					return std::string("error in command !setColorGroups:blue color");
-					}
+		//first mono index is wrong
+		if(ccBlue.fail()){
+			return std::string("error in command !setColorGroups:blue color");
+		}
 
-		//color all monomers
-		//if(mono.size()==1 && (!mono[0].compare("all")))
-		//{
-			std::cout << "color all monomers whithin group"<< std::endl;
 
-			for(size_t m=0; m< molecules_type[group].size(); ++m){
-				ingredients.modifyMolecules()[molecules_type[group].trueIndex(m)].setColor( red ,green , blue);
+		for(size_t m=0; m< molecules_type[group].size(); ++m){
+			ingredients.modifyMolecules()[molecules_type[group].trueIndex(m)].setColor( red ,green , blue);
 
-			}
+		}
 
-			return std::string("apply color to all monomers within Groups");
-		//}
-		//return std::string("could not color monomers with attribute");
+		return std::string("apply color to all monomers within Groups");
+
 	}
-
-
 };
 
 template<class IngredientsType, class MoleculesType>
@@ -920,12 +797,8 @@ public:
 	virtual ~CommandSetColorGroupsRandom(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetColor in CommandSetColorGroupsRandom " << std::endl;
-
-		// !setColorAttributes:att=(red, green, blue)
-		// !setColorAttributes:all=(red, green, blue)
+		//std::cout << "!SetColor in CommandSetColorGroupsRandom " << std::endl;
 
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
@@ -933,34 +806,26 @@ public:
 		if(vex.size() !=1 )
 			return std::string("error in command !setColorGroups");
 
-		//float red = atof(color[0].c_str());
-		//float green = atof(color[1].c_str());
-		//float blue = atof(color[2].c_str());
-
 		RandomNumberGenerators RNG;
 
 		float red = 0.0f;
 		float green = 0.0f;
 		float blue = 0.0f;
 
-
-		std::cout << "color all monomers whithin group"<< std::endl;
+		//std::cout << "color all monomers whithin group"<< std::endl;
 		for(size_t n=0; n< molecules_type.size(); ++n){
 
 			red = RNG.r250_drand();
 			green = RNG.r250_drand();
 			blue = RNG.r250_drand();
 
-		for(size_t m=0; m< molecules_type[n].size(); ++m){
+			for(size_t m=0; m< molecules_type[n].size(); ++m){
 				ingredients.modifyMolecules()[molecules_type[n].trueIndex(m)].setColor( red ,green , blue);
 
+			}
 		}
-		}
-			return std::string("apply color to all monomers within Groups");
-
+		return std::string("apply color to all monomers within Groups");
 	}
-
-
 };
 
 template<class IngredientsType, class MoleculesType>
@@ -970,7 +835,6 @@ public:
 	virtual ~CommandSetRadius(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
 		std::cout << "!SetRadius in CommandSetRadius " << std::endl;
 
@@ -996,7 +860,7 @@ public:
 		//first mono index is wrong
 		if(ccRadius.fail()){
 			return std::string("error in command !setRadiusr:Radius");
-			}
+		}
 
 		if(radius <= 0.0f)
 		{
@@ -1029,20 +893,20 @@ public:
 			//first mono index is wrong
 			if(ss1.fail()){
 				return std::string("error in command !setColor:1.st monomer index");
-			    }
+			}
 
 			if(mono1 >= ingredients.modifyMolecules().size())
 			{
 				return std::string("error in command !setColor: out-of-range 1.st monomer index");
-						   }
+			}
 
 			std::istringstream ss2(mono[1]);
 			ss2 >> mono2;
 
 			if(mono2 >= ingredients.modifyMolecules().size())
-								{
-									return std::string("error in command !setColor: out-of-range 2.nd monomer index");
-											   }
+			{
+				return std::string("error in command !setColor: out-of-range 2.nd monomer index");
+			}
 			//first mono index is wrong
 			if(ss1.fail()){
 				return std::string("error in command !setColor:2.st monomer index");
@@ -1051,13 +915,13 @@ public:
 
 			if(mono1 < mono2)
 			{
-			for(uint32_t i = mono1; i <= mono2; i++)
-				ingredients.modifyMolecules()[i].setRadius( radius);
+				for(uint32_t i = mono1; i <= mono2; i++)
+					ingredients.modifyMolecules()[i].setRadius( radius);
 			}
 			else
-				{for(uint32_t i = mono2; i <= mono1; i++)
-			ingredients.modifyMolecules()[i].setRadius( radius);
-				}
+			{for(uint32_t i = mono2; i <= mono1; i++)
+				ingredients.modifyMolecules()[i].setRadius( radius);
+			}
 
 			return std::string("apply radius monomers");
 		}
@@ -1073,13 +937,8 @@ public:
 	virtual ~CommandSetRadiusAttributes(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetRadius in CommandSetRadiusAttributes " << std::endl;
-
-		// !setColorAttributes:att=(red, green, blue)
-		// !setColorAttributes:all=(red, green, blue)
-
+		//std::cout << "!SetRadius in CommandSetRadiusAttributes " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
@@ -1089,37 +948,34 @@ public:
 		int32_t attribute=0;
 
 		std::istringstream ccAtt(vex[1]);
-				ccAtt >> attribute;
+		ccAtt >> attribute;
 
 		//attribute is wrong
-			if(ccAtt.fail()){
-					return std::string("error in command !setColorAttributes: attribute");
-				}
+		if(ccAtt.fail()){
+			return std::string("error in command !setColorAttributes: attribute");
+		}
 
-			//get radius information
-					float radius = 0.0f;
+		//get radius information
+		float radius = 0.0f;
 
-					std::istringstream ccRadius(vex[2]);
-					ccRadius >> radius;
+		std::istringstream ccRadius(vex[2]);
+		ccRadius >> radius;
 
-					//first mono index is wrong
-					if(ccRadius.fail()){
-						return std::string("error in command !setRadius:Radius");
-						}
+		//first mono index is wrong
+		if(ccRadius.fail()){
+			return std::string("error in command !setRadius:Radius");
+		}
 
-					if(radius <= 0.0f)
-					{
-						return std::string("error: radius <= 0.0f");
-					}
+		if(radius <= 0.0f)
+		{
+			return std::string("error: radius <= 0.0f");
+		}
 
-
-
-
-			for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
-				if(ingredients.modifyMolecules()[i].getAttributeTag() == attribute)
+		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+			if(ingredients.modifyMolecules()[i].getAttributeTag() == attribute)
 				ingredients.modifyMolecules()[i].setRadius( radius);
 
-			return std::string("apply radius to all monomers with attribute");
+		return std::string("apply radius to all monomers with attribute");
 
 	}
 };
@@ -1131,13 +987,8 @@ public:
 	virtual ~CommandSetRadiusLinks(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetColor in CommandSetRadiusLinks " << std::endl;
-
-		// !setColorAttributes:att=(red, green, blue)
-		// !setColorAttributes:all=(red, green, blue)
-
+		//std::cout << "!SetColor in CommandSetRadiusLinks " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
@@ -1147,39 +998,35 @@ public:
 		int32_t numLinks=0;
 
 		std::istringstream ccLinks(vex[1]);
-				ccLinks >> numLinks;
+		ccLinks >> numLinks;
 
 		//numLinks is wrong
-			if(ccLinks.fail()){
-					return std::string("error in command !setRadiusLinks: numLinks");
-				}
+		if(ccLinks.fail()){
+			return std::string("error in command !setRadiusLinks: numLinks");
+		}
 
-			//get radius information
-			float radius = 0.0f;
+		//get radius information
+		float radius = 0.0f;
 
-			std::istringstream ccRadius(vex[2]);
-			ccRadius >> radius;
+		std::istringstream ccRadius(vex[2]);
+		ccRadius >> radius;
 
-			//first mono index is wrong
-			if(ccRadius.fail()){
-				return std::string("error in command !setRadius:Radius");
-			}
+		//first mono index is wrong
+		if(ccRadius.fail()){
+			return std::string("error in command !setRadius:Radius");
+		}
 
-			if(radius <= 0.0f)
-			{
-				return std::string("error: radius <= 0.0f");
-			}
+		if(radius <= 0.0f)
+		{
+			return std::string("error: radius <= 0.0f");
+		}
 
 
-			std::cout << "color all monomers"<< std::endl;
-
-			for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
-				if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
+		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+			if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
 				ingredients.modifyMolecules()[i].setRadius( radius);
 
-			return std::string("apply radius to all monomers with numLinks");
-		//}
-		//return std::string("could not color monomers with attribute");
+		return std::string("apply radius to all monomers with numLinks");
 	}
 };
 
@@ -1191,13 +1038,8 @@ public:
 	virtual ~CommandSetRadiusGroups(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
-		std::cout << "!SetColor in CommandSetRadiusGroups " << std::endl;
-
-		// !setColorAttributes:att=(red, green, blue)
-		// !setColorAttributes:all=(red, green, blue)
-
+		//std::cout << "!SetColor in CommandSetRadiusGroups " << std::endl;
 		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
 
 		//command has 3 tokens
@@ -1209,12 +1051,12 @@ public:
 		//color all monomers
 
 		std::istringstream ccGroup(vex[1]);
-				ccGroup >> group;
+		ccGroup >> group;
 
 		//Group is wrong
-			if(ccGroup.fail()){
-					return std::string("error in command !setRadiusGroups: Groups");
-				}
+		if(ccGroup.fail()){
+			return std::string("error in command !setRadiusGroups: Groups");
+		}
 
 		if((group < 0) || (group >= molecules_type.size()))
 		{
@@ -1237,22 +1079,14 @@ public:
 			return std::string("error: radius <= 0.0f");
 		}
 
-		//color all monomers
-		//if(mono.size()==1 && (!mono[0].compare("all")))
-		//{
-			std::cout << "color all monomers whithin group"<< std::endl;
 
-			for(size_t m=0; m< molecules_type[group].size(); ++m){
-				ingredients.modifyMolecules()[molecules_type[group].trueIndex(m)].setRadius( radius);
+		for(size_t m=0; m< molecules_type[group].size(); ++m){
+			ingredients.modifyMolecules()[molecules_type[group].trueIndex(m)].setRadius( radius);
 
-			}
+		}
 
-			return std::string("apply color to all monomers within Groups");
-		//}
-		//return std::string("could not color monomers with attribute");
+		return std::string("apply color to all monomers within Groups");
 	}
-
-
 };
 
 template<class IngredientsType, class MoleculesType>
@@ -1262,31 +1096,29 @@ public:
 	virtual ~CommandGetHelp(){};
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
-	//std::string executeLineCommand( std::stringstream& sstrm)
 	{
 		std::cout << "!help with known commands" << std::endl;
 
-		return std::string("known commands\n\
-!setColor:idx1-idx2=(r,g,b)\n\
-!setColor:all=(r,g,b)\n\
-!setColorAttributes:att=(r,g,b)\n\
-!setColorLinks:numLinks=(r,g,b)\n\
-!setColorVisibility:vis=(r,g,b)\n\
-!setColorGroups:idxGroup=(r,g,b)\n\
-!setColorGroupsRandom\n\
-!setVisible:idx1-idx2=vis\n\
-!setVisible:all=vis\n\
-!setVisibleAttributes:att=vis\n\
-!setVisibleLinks:numLinks=vis\n\
-!setVisibleGroups:idxG1-idxG2=vis\n\
-!setRadius:idx1-idx2=radius\n\
-!setRadius:all=radius\n\
-!setRadiusAttributes:att=radius\n\
-!setRadiusLinks:numLinks=radius\n\
-!setRadiusGroups:idxGroup=radius\n");
+		return std::string("known commands:\n"
+				"!setColor:idx1-idx2=(r,g,b)\n"
+				"!setColor:all=(r,g,b)\n"
+				"!setColorAttributes:att=(r,g,b)\n"
+				"!setColorLinks:numLinks=(r,g,b)\n"
+				"!setColorVisibility:vis=(r,g,b)\n"
+				"!setColorGroups:idxGroup=(r,g,b)\n"
+				"!setColorGroupsRandom\n"
+				"!setColor:BG=(r,g,b)\n"
+				"!setVisible:idx1-idx2=vis\n"
+				"!setVisible:all=vis\n"
+				"!setVisibleAttributes:att=vis\n"
+				"!setVisibleLinks:numLinks=vis\n"
+				"!setVisibleGroups:idxG1-idxG2=vis\n"
+				"!setRadius:idx1-idx2=radius\n"
+				"!setRadius:all=radius\n"
+				"!setRadiusAttributes:att=radius\n"
+				"!setRadiusLinks:numLinks=radius\n"
+				"!setRadiusGroups:idxGroup=radius\n");
 	}
-
-
 };
 
 

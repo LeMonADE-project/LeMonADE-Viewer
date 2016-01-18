@@ -77,17 +77,11 @@ INCLUDE_DIRECTORIES("${LEMONADE_DIR}/include")
 link_directories ("${LEMONADE_DIR}/lib/")
 
 
-find_package(SDL REQUIRED)
-include_directories(${SDL_INCLUDE_DIR})
-
 find_package(OpenGL REQUIRED)
 include_directories( ${OPENGL_INCLUDE_DIRS})
 
 find_package(FLTK REQUIRED)
 include_directories( ${FLTK_INCLUDE_DIRS})
-
-#find_package(PNG REQUIRED)
-#include_directories(${PNG_INCLUDE_DIR})
 
 #
 # Add Build Targets

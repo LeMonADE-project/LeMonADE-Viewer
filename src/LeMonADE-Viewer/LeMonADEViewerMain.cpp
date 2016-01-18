@@ -28,19 +28,6 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
 
-/*
-#include <LeMonADE/feature/FeatureExcludedVolume.h>
-#include <LeMonADE/feature/FeatureFixedMonomers.h>
-
-#include <LeMonADE/utility/TaskManager.h>
-#include <LeMonADE/feature/FeatureBox.h>
-
-#include <LeMonADE/feature/FeatureBondset.h>
-#include <LeMonADE/utility/Vector3D.h>
-#include <LeMonADE/updater/UpdaterReadBfmFile.h>
-#include <LeMonADE/utility/DepthIterator.h>
-#include <LeMonADE/utility/MonomerGroup.h>
-*/
 
 #include <LeMonADE/core/ConfigureSystem.h>
 #include <LeMonADE/core/Ingredients.h>
@@ -58,7 +45,9 @@ int main(int argc, char* argv[])
 
 	typedef LOKI_TYPELIST_3(FeatureMoleculesIO,FeatureVisualize,FeatureAttributes) Features;
 
+	// in most cases the number of connections of a monomer dosn't exceed 8 bonds
 	const uint max_bonds=8;
+
 	typedef ConfigureSystem<VectorInt3,Features,max_bonds> Config;
 	typedef Ingredients<Config> IngredientsSystem;
 
@@ -68,23 +57,23 @@ int main(int argc, char* argv[])
 
 	try{
 
-		IngredientsSystem MyLeMonADeSystem;
+		IngredientsSystem MyLeMonADESystem;
 
 		// A bfm file of given filename will be read
 		if ( argc < 2 )
 		{
-			std::cout << "usage: ./program  filename\n";
+			std::cout << "usage: ./LeMonADE-Viewer filename\n";
 			return 1;
 		}
 
 		std::string filename (argc>1?argv[1]:"testfile.bfm");
 
 
-		LeMonADEViewer<IngredientsSystem> ShowLeMonADeViewer(MyLeMonADeSystem, filename);
+		LeMonADEViewer<IngredientsSystem> ShowLeMonADEViewer(MyLeMonADESystem, filename);
 
-		ShowLeMonADeViewer.initialize();
-		ShowLeMonADeViewer.execute();
-		ShowLeMonADeViewer.cleanup();
+		ShowLeMonADEViewer.initialize();
+		ShowLeMonADEViewer.execute();
+		ShowLeMonADEViewer.cleanup();
 
 	}
 	catch(std::runtime_error& err){std::cerr<<err.what();}

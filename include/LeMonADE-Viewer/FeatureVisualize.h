@@ -129,38 +129,31 @@ private:
 /*****************************************************************************/
 /**
  * @class FeatureVisualize
- * @brief extends monomer type with VisualizeMonomer and holds global visualization parameters
+ *
+ * @brief extends ingredients by all properties for visualization monomer type with
+ *        VisualizeMonomer and holds global visualization parameters
  * */
 /*****************************************************************************/
 class FeatureVisualize: public Feature {
 public:
 
-	enum FoldBackType {ABSOLUTE, CHAINSTARTS_IN_BOX, EVERYTHING_IN_BOX};
 
 	typedef LOKI_TYPELIST_1(VisualizeMonomer)monomer_extensions;
 
-	FeatureVisualize(): cameraPosition(VectorInt3(1000,1000,1000)), visualizeBonds(true), foldBack(EVERYTHING_IN_BOX), isSmoothingCoordinates(false), maxNumSmoothingFrame(2), Translation(VectorInt3(0,0,0)), drawingMonomersAsSpheres(false), subdivisionSpheres(4) {}
+	FeatureVisualize(): BGcolor(VectorFloat3(0.0f,0.0f,0.0f)), visualizeBonds(true), visualizePBC(false), isSmoothingCoordinates(false), maxNumSmoothingFrame(2), Translation(VectorInt3(0,0,0)), drawingMonomersAsSpheres(false), subdivisionSpheres(4) {}
+
 	virtual ~FeatureVisualize() {}
 
 public:
-	VectorInt3 getCameraPosition() const
+
+	bool isVisualizePBC() const
 	{
-		return cameraPosition;
+		return visualizePBC;
 	}
 
-	void setCameraPosition(VectorInt3 cameraPosition)
+	void setVisualizePBC(bool foldBack)
 			{
-		this->cameraPosition = cameraPosition;
-	}
-
-	FoldBackType getFoldBack() const
-	{
-		return foldBack;
-	}
-
-	void setFoldBack(FoldBackType foldBack)
-			{
-		this->foldBack = foldBack;
+		this->visualizePBC = foldBack;
 	}
 
 	bool isVisualizeBonds() const
@@ -244,11 +237,27 @@ public:
 		this->subdivisionSpheres = subdivisionSpheres;
 	}
 
+	VectorFloat3 getBGcolor() const {
+		return BGcolor;
+	}
+
+	void setBGcolor(float red, float green, float blue)
+	{
+			this->BGcolor.setAllCoordinates(red, green, blue);
+	}
+
+	float getWidthBond() const {
+		return widthBond;
+	}
+
+	void setWidthBond(float widthBond) {
+		this->widthBond = widthBond;
+	}
+
 private:
-	VectorInt3 cameraPosition;
-	bool visualizeBonds; // switch visualization on or off
-	FoldBackType foldBack; // fold back monomers type, can either be ABSOLUTE (all monomers are displayed at their absolute postion),
-	//CHAINSTARTS_IN_BOX (all chain starts are in the box) or EVERYTHING_IN_BOX(amm monomers are in the box)
+
+	bool visualizeBonds; // switch visualization on or off for bonds
+	bool visualizePBC; // switch projection into lattice on/off for periodic boundary conditions
 
 	bool isSmoothingCoordinates;
 	uint8_t maxNumSmoothingFrame;
@@ -258,7 +267,11 @@ private:
 	bool drawingMonomersAsSpheres;
 
 	uint8_t subdivisionSpheres;
+
+	VectorFloat3 BGcolor; // background color in rgb-code  with r/g/b/ between 0.0...1.0
+
+	float widthBond; // the extension (width of the bond)
 };
 
 
-#endif /* LEMONADE_FEATURE_FEATUREVISUALIZE_H */
+#endif /* LEMONADE_VIEWER_FEATUREVISUALIZE_H */
