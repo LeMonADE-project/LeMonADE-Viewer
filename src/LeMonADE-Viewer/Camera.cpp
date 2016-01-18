@@ -42,6 +42,9 @@ Camera::Camera() {
   //Linear Camera movement (left, right, up, down, in out)
   CamSpeedMovement.setAllCoordinates(0.0f, 0.0f, 0.0f);
 
+  // the point we are looking to
+  CamCenter.setAllCoordinates(0.0f, 0.0f, 0.0f);
+
   //Camera rotation angles
   CamAngleYaw = 0.0f;  // rotation in x-z-plane
   CamAnglePitch = 0.0f;  // rotation perpendicular to x-z-plane
@@ -53,10 +56,10 @@ Camera::Camera() {
   movementSpeedFactor = 1.0f;
   
   //Is a key pressed for linear camera movement?
-  holdingForwardI = false;	// key I = zoom in
-  holdingBackwardO = false;	// key O = zoom out
-  holdingUpW = false;		// key W = move up
-  holdingDownS = false;		// key S = move down
+  holdingForwardI = false;	// key I = move up
+  holdingBackwardO = false;	// key O = move down
+  holdingUpW = false;		// key W = move forward
+  holdingDownS = false;		// key S = move backward
   holdingLeftA = false;		// key A = move left
   holdingRightD = false;	// key D = move right
   
@@ -107,6 +110,18 @@ float Camera::getCamYSpeed() const {
 
 float Camera::getCamZSpeed() const {
   return CamSpeedMovement.getZ();
+}
+
+float Camera::getCamCenterXPos() const {
+  return CamCenter.getX();
+}
+
+float Camera::getCamCenterYPos() const {
+  return CamCenter.getY();
+}
+
+float Camera::getCamCenterZPos() const {
+  return CamCenter.getZ();
 }
 
 float Camera::getMovementSpeedFactor() const {
@@ -198,6 +213,20 @@ CamSpeedMovement.setY(camYSpeed);
 void Camera::setCamZSpeed(float camZSpeed) {
 	CamSpeedMovement.setZ(camZSpeed);
 }
+
+
+void Camera::setCamCenterXPos(float camCenterXPos) {
+	CamCenter.setX(camCenterXPos);
+}
+
+void Camera::setCamCenterYPos(float camCenterYPos) {
+	CamCenter.setY(camCenterYPos);
+}
+
+void Camera::setCamCenterZPos(float camCenterZPos) {
+	CamCenter.setZ(camCenterZPos);
+}
+
 
 void Camera::setMovementSpeedFactor(float movementSpeedFactorParam) {
   this->movementSpeedFactor = movementSpeedFactorParam;
@@ -342,14 +371,6 @@ void Camera::handleMouseMove(int mouseX, int mouseY, int boxX, int boxY, int box
   float camPhiRads = toRads(CamAngleYaw);
   float camThetaRads = toRads(CamAnglePitch);
   
-  
-  
-  /*glm::vec3 front;
-      front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-      front.y = sin(glm::radians(pitch));
-      front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-      cameraFront = glm::normalize(front);
-*/
 }
 
 //Funktion to set the new camera position after a linear movement

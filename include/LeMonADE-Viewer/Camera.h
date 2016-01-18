@@ -57,6 +57,9 @@ public:
   float getCamAngleYaw() const;
   float getCamAnglePitch() const;
   
+  float getCamCenterXPos() const;
+  float getCamCenterYPos() const;
+  float getCamCenterZPos() const;
 
   float getCamXSpeed() const;
   float getCamYSpeed() const;
@@ -79,6 +82,10 @@ public:
   void setCamXPos(float camXPos = 0.0f);
   void setCamYPos(float camYPos = 0.0f);
   void setCamZPos(float camZPos = 0.0f);
+
+  void setCamCenterXPos(float camCenterXPos = 0.0f);
+  void setCamCenterYPos(float camCenterYPos = 0.0f);
+  void setCamCenterZPos(float camCenterZPos = 0.0f);
 
   void setCamAngleYaw(float camAngleYaw = 0.0f);
   void setCamAnglePitch(float camAnglePitch = 0.0f);
@@ -109,12 +116,13 @@ public:
   void handleMouseMove(int, int, int, int, int);
   
   float toRads(const float);
-  
+
 private:
   
   VectorFloat3 CamPosition;
-  
   VectorFloat3 CamSpeedMovement;
+  
+  VectorFloat3 CamCenter;
 
   float CamAngleYaw;
   float CamAngleYawSpeed;
