@@ -57,9 +57,7 @@ public:
   float getCamAngleYaw() const;
   float getCamAnglePitch() const;
   
-  float getCamThetaRotAxisX() const;
-  float getCamThetaRotAxisZ() const;
- 
+
   float getCamXSpeed() const;
   float getCamYSpeed() const;
   float getCamZSpeed() const;
@@ -88,9 +86,6 @@ public:
   void setCamAngleYawSpeed(float camAngleYawSpeed = 0.0f);
   void setCamAnglePitchSpeed(float camCamAnglePitchSpeed = 0.0f);
 
-  void setCamThetaRotAxisX(float camThetaRotAxisXParam = 1.0f);
-  void setCamThetaRotAxisZ(float camThetaRotAxisZParam = 0.0f);
-  
   void setCamXSpeed(float camXSpeedParam = 0.0f);
   void setCamYSpeed(float camYSpeedParam = 0.0f);
   void setCamZSpeed(float camZSpeedParam = 0.0f);
@@ -127,8 +122,6 @@ private:
   float CamAnglePitch;
   float CamAnglePitchSpeed;
   
-  float camThetaRotAxisX;
-  float camThetaRotAxisZ;
 
   float movementSpeedFactor;
   

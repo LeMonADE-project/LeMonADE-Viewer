@@ -439,12 +439,6 @@ int LeMonADEOpenGL<IngredientsType>::handle(int e) {
 			cam.setCamAngleYawSpeed(0.0f);
 			cam.setCamAnglePitchSpeed(0.0f);
 
-			//Camera rotation axis
-			cam.setCamThetaRotAxisX(1.0f);
-			cam.setCamThetaRotAxisZ(0.0f);
-
-			//  glTranslatef(-cam.getCamXPos(),-cam.getCamYPos(),-cam.getCamZPos());    // Translate the model
-
 			// Camera position
 			cam.setCamXPos(0.0f);
 			cam.setCamYPos(-2*this->ingredients.getBoxY());

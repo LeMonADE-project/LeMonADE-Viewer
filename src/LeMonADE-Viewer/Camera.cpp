@@ -46,9 +46,6 @@ Camera::Camera() {
   CamAngleYaw = 0.0f;  // rotation in x-z-plane
   CamAnglePitch = 0.0f;  // rotation perpendicular to x-z-plane
   
-  //Axis for camera rotation with angle theta
-  camThetaRotAxisX = 1.0f;
-  camThetaRotAxisZ = 0.0f;
   
   CamAngleYawSpeed = 0.0f;
   CamAnglePitchSpeed= 0.0f;
@@ -98,14 +95,6 @@ float Camera::getCamAnglePitch() const {
   return CamAnglePitch;
 }
 
-//Get x- and z-component of the rotation axis for rotation angle theta 
-float Camera::getCamThetaRotAxisX() const {
-  return camThetaRotAxisX;
-}
-
-float Camera::getCamThetaRotAxisZ() const {
-  return camThetaRotAxisZ;
-}
 
 //Get linear camera movement
 float Camera::getCamXSpeed() const {
@@ -196,14 +185,7 @@ void Camera::setCamAnglePitchSpeed(float camAnglePitchSpeed) {
 	CamAnglePitchSpeed = camAnglePitchSpeed;
 }
 
-//Set x- and z-component of the rotation axis for rotation angle theta 
-void Camera::setCamThetaRotAxisX(float camThetaRotAxisXParam) {
-  this->camThetaRotAxisX = camThetaRotAxisXParam;
-}
 
-void Camera::setCamThetaRotAxisZ(float camThetaRotAxisZParam) {
-  this->camThetaRotAxisZ = camThetaRotAxisZParam;
-}
 
 void Camera::setCamXSpeed(float camXSpeed) {
   CamSpeedMovement.setX(camXSpeed);
@@ -360,11 +342,6 @@ void Camera::handleMouseMove(int mouseX, int mouseY, int boxX, int boxY, int box
   float camPhiRads = toRads(CamAngleYaw);
   float camThetaRads = toRads(CamAnglePitch);
   
-  //Calculation of the rotation axis for angle theta
-  //This is needed to ensure that displayed simulation box is always rotated in the same direction when 
-  //the mouse is moved e.g. upwards
-  camThetaRotAxisX = cos(camPhiRads);
-  camThetaRotAxisZ = sin(camPhiRads);
   
   
   /*glm::vec3 front;
@@ -390,9 +367,6 @@ void Camera::moveCamera() {
   CamAngleYaw += CamAngleYawSpeed;
   CamAnglePitch += CamAnglePitchSpeed;
 
-  float camPhiRads = toRads(CamAngleYaw);
-  camThetaRotAxisX = cos(camPhiRads);
-  camThetaRotAxisZ = sin(camPhiRads);
 
 
 }
