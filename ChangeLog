@@ -6,3 +6,7 @@
 
 * Release-1.2.0
 - adding widget FL_Choice for easy color change
+
+* Release-1.2.1
+- adding command "!setColor:BG=(r,g,b)" for changing background color
+- code refactoring
