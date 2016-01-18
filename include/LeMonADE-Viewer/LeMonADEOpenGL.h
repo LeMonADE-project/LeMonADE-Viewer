@@ -164,9 +164,9 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	float radius = 1.5*boxZ;
 
 	float pi = atan(1)*4;
-	float PhiPov = (-cam.getCamPhiRot()) * pi / 180.0;
-	float ThetaPov1 = (-cam.getCamThetaRot()) * pi / 180.0;
-	float ThetaPov2 = (cam.getCamThetaRot()) * pi / 180.0;
+	float PhiPov = (-cam.getCamAngleYaw()) * pi / 180.0;
+	float ThetaPov1 = (-cam.getCamAnglePitch()) * pi / 180.0;
+	float ThetaPov2 = (cam.getCamAnglePitch()) * pi / 180.0;
 
 	// need clauses if position of camera is positive
 	if((-cam.getCamYPos()) >=0)
@@ -191,9 +191,9 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 
 	afile << "rotate  < 90, 0, 0 >" << std::endl;
 
-		afile << "rotate  < 0, 0, " << -cam.getCamPhiRot() << " >" << std::endl;
+		afile << "rotate  < 0, 0, " << -cam.getCamAngleYaw() << " >" << std::endl;
 		//afile << "rotate  <" << -cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
-		afile << "rotate  <" << cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
+		afile << "rotate  <" << cam.getCamAnglePitch() << ", 0 , 0 > "<< std::endl;
 
 		afile << " translate <" << 0.5*boxX  <<" , " << 0.5*boxY <<" , " << 0.5*boxZ << ">" << std::endl;
 
@@ -212,9 +212,9 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	afile << "//fade_power 3" << std::endl;
 	afile << "rotate  < 90, 0, 0 >" << std::endl;
 
-		afile << "rotate  < 0, 0, " << -cam.getCamPhiRot() << " >" << std::endl;
+		afile << "rotate  < 0, 0, " << -cam.getCamAngleYaw() << " >" << std::endl;
 		//afile << "rotate  <" << -cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
-		afile << "rotate  <" << cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
+		afile << "rotate  <" << cam.getCamAnglePitch() << ", 0 , 0 > "<< std::endl;
 
 		afile << "// translate <" << 0.5*boxX  <<" , " << 0.5*boxY <<" , " << 0.5*boxZ << ">" << std::endl;
 
@@ -389,8 +389,8 @@ int LeMonADEOpenGL<IngredientsType>::handle(int e) {
 		break;
 
 	case FL_PUSH:
-		cam.setCamPhiRotSpeed(0.0);
-		cam.setCamThetaRotSpeed(0.0);
+		cam.setCamAngleYawSpeed(0.0);
+		cam.setCamAnglePitchSpeed(0.0);
 
 		mouse.x = (Fl::event_x());
 		mouse.y = (Fl::event_y());
@@ -433,11 +433,11 @@ int LeMonADEOpenGL<IngredientsType>::handle(int e) {
 		if (int(Fl::event_key()) == int('r')) //resets camera
 		{
 			//Camera rotation
-			cam.setCamPhiRot(0.0f);
-			cam.setCamThetaRot(0.0f);
+			cam.setCamAngleYaw(0.0f);
+			cam.setCamAnglePitch(0.0f);
 
-			cam.setCamPhiRotSpeed(0.0f);
-			cam.setCamThetaRotSpeed(0.0f);
+			cam.setCamAngleYawSpeed(0.0f);
+			cam.setCamAnglePitchSpeed(0.0f);
 
 			//Camera rotation axis
 			cam.setCamThetaRotAxisX(1.0f);
@@ -593,8 +593,8 @@ void LeMonADEOpenGL<IngredientsType>::draw(){
 	glRotatef(-90.0, 1.0f, 0.0f, 0.0f);
 	//Rotate the simulation box accordingly to the calculated "camera rotation" angles
 	//Rotation around center of the simulation box
-	glRotatef(cam.getCamPhiRot(), 0.0f, 0.0f, 1.0f);
-	glRotatef(-cam.getCamThetaRot(), 1.0f, 0.0f, 0.0f);
+	glRotatef(cam.getCamAngleYaw(), 0.0f, 0.0f, 1.0f);
+	glRotatef(-cam.getCamAnglePitch(), 1.0f, 0.0f, 0.0f);
 	//glRotatef(cam.getCamThetaRot(), -cam.getCamThetaRotAxisX(), 0.0f, -cam.getCamThetaRotAxisZ());
 	//move the simulation box with the center into the origin of coordinates
 	glTranslatef(-0.5*boxX, -0.5*boxY, -0.5*boxZ);
