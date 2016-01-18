@@ -37,13 +37,12 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <vector>
 
-//#include <png.h> //export library for screenshot
-
 #include <LeMonADE/utility/DepthIterator.h>
 #include <LeMonADE/utility/MonomerGroup.h>
 
 #include <LeMonADE-Viewer/Camera.h>
 
+// struct for emulate new and last mouse position
 typedef struct {
   int button;
   int x;
@@ -56,39 +55,36 @@ typedef struct {
 template <class IngredientsType>
 class LeMonADEOpenGL : public Fl_Gl_Window {
 
+	// draw the scene
 	void draw();
+
+	// handle the user input (mouse+keyboard)
 	int handle(int);
 
-
-
+	// camera (position, yaw, pitch etc.)
 	Camera cam;
 
+	// reference to the data
 	IngredientsType& ingredients;
 	const typename IngredientsType::molecules_type& molecules;
 
+	// abbreviation of ingredients.getBox()
 	int boxX;
 	int boxY;
 	int boxZ;
 
-	bool showingBonds;
-	bool foldingBack;		//
-	//float point_size;				//the size of the point
-	float bond_width;				//the width of the bonds
-
 	Mouse mouse;    // Keeping track of mouse input
 
 	//find connected molecules and put them in group
-	//typedef NameDecorator< vector < MonomerGroup<typename IngredientsType::molecules_type> > > NamedMonomerGroupVector;
-	//NamedMonomerGroupVector linearStrandsVector;
-	//an open issue that I can´t call:  NamedMonomerGroupVector linearStrandsVector("linearStrands");
 	typedef std::vector < MonomerGroup<typename IngredientsType::molecules_type> > MonomerGroupVector;
 
 	MonomerGroupVector& linearStrandsVectorGroup;
 
-	void draw_monomers_fkt(bool , bool);
+	void draw_coordinate_system();
+	void draw_monomers();
+	void draw_bonds();
 
-	void show_bonds_fkt(bool showingBonds, bool foldingBack);
-
+	// helper array for interpolating monomers as spheres
 	float xSphere1[256]; // subdivision between s is element [1,15]
 	float ySphere1[256]; // indexing lat+longs*(s+1)
 	float zSphere1[256];
@@ -100,23 +96,12 @@ class LeMonADEOpenGL : public Fl_Gl_Window {
 
 
 public:
-	LeMonADEOpenGL(IngredientsType& _ingredients, MonomerGroupVector& _linearStrandsVectorGroup, int x,int y,int w,int h,const char *l=0): ingredients(_ingredients), linearStrandsVectorGroup(_linearStrandsVectorGroup),molecules(_ingredients.getMolecules()),Fl_Gl_Window(x,y,w,h,l){
-		 showingBonds = true;
-
-		 foldingBack = false;
-		// point_size = 1.0;
-		 bond_width = 0.3;
-
-		 //find the monomer in connected Structure
-		 		       for ( uint g = 0; g < linearStrandsVectorGroup.size(); ++g)
-		 		       {
-		 		    	   std::cout << "group nr: "  << g  << " ; monos in group:" << linearStrandsVectorGroup[g].size() << std::endl;
-
-		 		     	//  if(monoinBMC < groups[g].size())
-		 		     		//  monoinBMC=groups[g].size();
-
-		 		       }
-	};
+	LeMonADEOpenGL(IngredientsType& _ingredients, MonomerGroupVector& _linearStrandsVectorGroup, int x,int y,int w,int h,const char *l=0): ingredients(_ingredients), linearStrandsVectorGroup(_linearStrandsVectorGroup),molecules(_ingredients.getMolecules()),Fl_Gl_Window(x,y,w,h,l)
+{
+		ingredients.setVisualizeBonds(true);
+		ingredients.setVisualizePBC(false);
+		ingredients.setWidthBond(0.3);
+};
 
 	virtual ~LeMonADEOpenGL(){};
 
@@ -124,149 +109,38 @@ public:
 
 	void generatePovRayScript(std::string croppedFilenamePovray);
 
-	bool screenshoot(const std::string&name);
-
-	bool isFoldingBack() const {
-		return foldingBack;
-	}
-
-	void setFoldingBack(bool isFoldingBack) {
-		this->foldingBack = isFoldingBack;
-	}
-
-	bool isShowingBonds() const {
-		return showingBonds;
-	}
-
-	void setShowingBonds(bool isShowingBonds) {
-		this->showingBonds = isShowingBonds;
-	}
-
-	//int getRadiusMonomer() const {
-	//	return point_size;
-	//}
-
-	void setRadiusMonomer(float radiusMonomer) {
-
-		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
-			ingredients.modifyMolecules()[i].setRadius( radiusMonomer);
-	}
-
-	float getBondWidth() const {
-		return bond_width;
-	}
-
-	void setBondWidth(float bondWidth) {
-		bond_width = bondWidth;
-	}
-
+	// modulo operation for float numbers
 	float mod(float a, float N) {return a - N*floor(a/N);}
 
-	/*void drawSphere(float radius, int lats, int longs, float x_cm, float y_cm, float z_cm) {
-	  int i, j;
-	  double MPI = 314159;
-	  for(i = 0; i <= lats; i++) {
-	  double lat0 = M_PI * (-0.5 + (double) (i - 1) / lats);
-	  double z0  = sin(lat0);
-	  double zr0 = cos(lat0);
-
-	  double lat1 = M_PI * (-0.5 + (double) i / lats);
-	 double z1 = sin(lat1);
-	 double zr1 = cos(lat1);
-
-	 glBegin(GL_QUAD_STRIP);
-	 for(j = 0; j <= longs; j++) {
-	 double lng = 2 * M_PI * (double) (j - 1) / longs;
-	 double x = cos(lng);
-	 double y = sin(lng);
-
-	 //glNormal3f(x * zr0 +x_cm, y * zr0 + y_cm, z0 + z_cm);
-	 glVertex3f(radius*x * zr0 +x_cm, radius*y * zr0 + y_cm, radius*z0 + z_cm);
-	 //glNormal3f(x * zr1 +x_cm, y * zr1 + y_cm, z1 + z_cm);
-	 glVertex3f(radius*x * zr1 +x_cm, radius*y * zr1 + y_cm, radius*z1 + z_cm);
-	          }
-	         glEnd();
-	      }
-	   }*/
-
+	// interpolation of sphere
+	// maybe we should use GLUT for that
 	void precalculateSphere(int lats, int longs) {
-	  int i, j;
+		int i, j;
 
-	  int offset = ingredients.getSubdivisionSpheres()+1;
-	  //double MPI = 314159;
-/*	  for(i = 0; i <= lats; i++) {
-	  double lat0 = M_PI * (-0.5 + (double) (i - 1) / lats);
-	  double z0  = sin(lat0);
-	  double zr0 = cos(lat0);
+		int offset = ingredients.getSubdivisionSpheres()+1;
 
-	  double lat1 = M_PI * (-0.5 + (double) i / lats);
-	 double z1 = sin(lat1);
-	 double zr1 = cos(lat1);
+		int p = ingredients.getSubdivisionSpheres();
+		int q = ingredients.getSubdivisionSpheres();
 
-	 //glBegin(GL_QUAD_STRIP);
-	 for(j = 0; j <= longs; j++) {
-	 double lng = 2 * M_PI * (double) (j - 1) / longs;
-	 double x = cos(lng);
-	 double y = sin(lng);
+		int subdivision= ingredients.getSubdivisionSpheres();
+		float PI=3.14159265f;
+		//lat
+		for(int i = 0; i < subdivision; i++)
+		{
+			//longs
+			for(int j = 0; j <= subdivision; j++)
+			{
+				xSphere1[j+i*offset]=cos( (-0.5+(float)(i+1)/q)* PI ) * cos( 2.0 * (float)j/p * PI );
+				ySphere1[j+i*offset]=cos( (-0.5+(float)(i+1)/q)* PI ) * sin( 2.0 * (float)j/p * PI );
+				zSphere1[j+i*offset]=sin( (-0.5+(float)(i+1)/q)* PI );
 
-	 xSphere1[j+i*offset]=x * zr0;
-	 	 ySphere1[j+i*offset]=y * zr0;
-	 	 zSphere1[j+i*offset]=z0;
+				xSphere2[j+i*offset]=cos( (-0.5+(float)(i)/q)* PI ) * cos( 2.0 * (float)j/p * PI );
+				ySphere2[j+i*offset]=cos( (-0.5+(float)(i)/q)* PI ) * sin( 2.0 * (float)j/p * PI );
+				zSphere2[j+i*offset]=sin( (-0.5+(float)(i)/q)* PI );
 
-	 	 xSphere2[j+i*offset]=x * zr1;
-	 	 ySphere2[j+i*offset]=y * zr1;
-	 	 zSphere2[j+i*offset]=z1;
-
-	 //glNormal3f(x * zr0 +x_cm, y * zr0 + y_cm, z0 + z_cm);
-	// glVertex3f(radius*x * zr0 +x_cm, radius*y * zr0 + y_cm, radius*z0 + z_cm);
-	 //glNormal3f(x * zr1 +x_cm, y * zr1 + y_cm, z1 + z_cm);
-	 //glVertex3f(radius*x * zr1 +x_cm, radius*y * zr1 + y_cm, radius*z1 + z_cm);
-	          }
-	       //  glEnd();
-	      }
-*/
-
-	  int p = ingredients.getSubdivisionSpheres();
-	  int q = ingredients.getSubdivisionSpheres();
-
-	  int subdivision= ingredients.getSubdivisionSpheres();
-	  float PI=3.14159265f;
-	  //lat
-	  for(int i = 0; i < subdivision; i++)
-	  	       {
-	  	          // One latitudinal triangle strip.
-	  	          //glBegin(GL_TRIANGLE_STRIP);
-	  	          //longs
-	  	             for(int j = 0; j <= subdivision; j++)
-	  	    		 {
-	  	            	//xSphere1[j+i*offset]=cos( (float)(i+1)/q * PI/2.0 ) * cos( 2.0 * (float)j/p * PI );
-	  	            	//ySphere1[j+i*offset]=cos( (float)(i+1)/q * PI/2.0 ) * sin( 2.0 * (float)j/p * PI );
-	  	            	//zSphere1[j+i*offset]=sin( (float)(i+1)/q * PI/2.0 );
-
-	  	            	//xSphere2[j+i*offset]=cos( (float)i/q * PI/2.0 ) * cos( 2.0 * (float)j/p * PI );
-	  	            	//ySphere2[j+i*offset]=cos( (float)i/q * PI/2.0 ) * sin( 2.0 * (float)j/p * PI );
-	  	            	//zSphere2[j+i*offset]=sin( (float)i/q * PI/2.0 );
-
-	  	            	xSphere1[j+i*offset]=cos( (-0.5+(float)(i+1)/q)* PI ) * cos( 2.0 * (float)j/p * PI );
-	  	            	ySphere1[j+i*offset]=cos( (-0.5+(float)(i+1)/q)* PI ) * sin( 2.0 * (float)j/p * PI );
-	  	            	zSphere1[j+i*offset]=sin( (-0.5+(float)(i+1)/q)* PI );
-
-	  	            	xSphere2[j+i*offset]=cos( (-0.5+(float)(i)/q)* PI ) * cos( 2.0 * (float)j/p * PI );
-	  	            	ySphere2[j+i*offset]=cos( (-0.5+(float)(i)/q)* PI ) * sin( 2.0 * (float)j/p * PI );
-	  	            	zSphere2[j+i*offset]=sin( (-0.5+(float)(i)/q)* PI );
-
-	  	                //glVertex3f( radius * cos( (float)(j+1)/q * PI/2.0 ) * cos( 2.0 * (float)i/p * PI ) + x_draw,
-	  	                //		radius * sin( (float)(j+1)/q * PI/2.0 )+ y_draw,
-	  	                //		radius * cos( (float)(j+1)/q * PI/2.0 ) * sin( 2.0 * (float)i/p * PI ) +z_draw);
-	  	                //glVertex3f( radius * cos( (float)j/q * PI/2.0 ) * cos( 2.0 * (float)i/p * PI ) +x_draw,
-	  	                //		radius * sin( (float)j/q * PI/2.0 )+ y_draw,
-	  	                //		radius * cos( (float)j/q * PI/2.0 ) * sin( 2.0 * (float)i/p * PI ) +z_draw);
-	  	    		 }
-	  	          //glEnd();
-	  	       }
-
-
-	   }
+			}
+		}
+	}
 };
 
 template <class IngredientsType>
@@ -275,6 +149,7 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
     std::ofstream afile;
 	std::string afileName = croppedFilenamePovray+".pov";
 	afile.open(afileName.c_str(),std::ios::trunc);
+
 	afile << "// povray +I"<<croppedFilenamePovray << ".pov +O"<<croppedFilenamePovray << ".png +W"<<this->w() <<" +H" << this->h() << " +P " << std::endl;
 	afile << "// +UA for transparency mask" << std::endl;
 	afile << "" << std::endl;
@@ -285,14 +160,13 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	afile << "" << std::endl;
 
 	// camera
-
 	afile << "camera{" << std::endl;
 	float radius = 1.5*boxZ;
 
 	float pi = atan(1)*4;
-	float PhiPov = (-cam.getCamPhiRot()) * pi / 180.0;
-	float ThetaPov1 = (-cam.getCamThetaRot()) * pi / 180.0;
-	float ThetaPov2 = (cam.getCamThetaRot()) * pi / 180.0;
+	float PhiPov = (-cam.getCamAngleYaw()) * pi / 180.0;
+	float ThetaPov1 = (-cam.getCamAnglePitch()) * pi / 180.0;
+	float ThetaPov2 = (cam.getCamAnglePitch()) * pi / 180.0;
 
 	// need clauses if position of camera is positive
 	if((-cam.getCamYPos()) >=0)
@@ -317,9 +191,9 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 
 	afile << "rotate  < 90, 0, 0 >" << std::endl;
 
-		afile << "rotate  < 0, 0, " << -cam.getCamPhiRot() << " >" << std::endl;
+		afile << "rotate  < 0, 0, " << -cam.getCamAngleYaw() << " >" << std::endl;
 		//afile << "rotate  <" << -cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
-		afile << "rotate  <" << cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
+		afile << "rotate  <" << cam.getCamAnglePitch() << ", 0 , 0 > "<< std::endl;
 
 		afile << " translate <" << 0.5*boxX  <<" , " << 0.5*boxY <<" , " << 0.5*boxZ << ">" << std::endl;
 
@@ -327,7 +201,7 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 
 	afile << "" << std::endl;
 	afile << "// background color" << std::endl;
-	afile << "sky_sphere{pigment{color rgb< 0.0, 0.0, 0.0 > }}" << std::endl;
+	afile << "sky_sphere{pigment{color rgb< " << ingredients.getBGcolor()[0] << ", " << ingredients.getBGcolor()[1] << ", " << ingredients.getBGcolor()[2] << "> }}" << std::endl;
 	afile << "" << std::endl;
 	afile << "// light source" << std::endl;
 	afile << "light_source{<1000.0, 1000.0, -200.0> color White}" << std::endl;
@@ -338,9 +212,9 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	afile << "//fade_power 3" << std::endl;
 	afile << "rotate  < 90, 0, 0 >" << std::endl;
 
-		afile << "rotate  < 0, 0, " << -cam.getCamPhiRot() << " >" << std::endl;
+		afile << "rotate  < 0, 0, " << -cam.getCamAngleYaw() << " >" << std::endl;
 		//afile << "rotate  <" << -cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
-		afile << "rotate  <" << cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
+		afile << "rotate  <" << cam.getCamAnglePitch() << ", 0 , 0 > "<< std::endl;
 
 		afile << "// translate <" << 0.5*boxX  <<" , " << 0.5*boxY <<" , " << 0.5*boxZ << ">" << std::endl;
 
@@ -360,7 +234,7 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	    	  {
 	    		  if (ingredients.isSmoothing() == false){
 
-	    			  if (foldingBack == true) {
+	    			  if (ingredients.isVisualizePBC() == true) {
 	    				  afile << "sphere{< " << ((((molecules[n][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX)  << ", " << ((((molecules[n][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY)  << ", " << (((((molecules[n][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ) )  << "> " << molecules[n].getRadius() << std::endl;
 
 	    			  }
@@ -370,7 +244,7 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	    		  }
 	    		  else
 	    		  {
-	    			  if (foldingBack == true) {
+	    			  if (ingredients.isVisualizePBC() == true) {
 	    				  afile << "sphere{< " << ((mod(molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX)  ) )  << ", " << ((mod(molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) ) )  << ", " << (((mod(molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) ) ))  << "> " << (molecules[n].getRadius()) << std::endl;
 
 	    			  }
@@ -387,7 +261,7 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 
 	//bonds:
 
-	if (showingBonds == true) {
+	if (ingredients.isVisualizeBonds() == true) {
 		for(size_t n=0; n< molecules.size(); ++n){
 
 	    	  size_t linkcount = ingredients.getMolecules().getNumLinks(n);		// check for the number of links the current monomer has
@@ -417,7 +291,7 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 
 	    		 	   //afile << "cylinder{ < " << linearStrandsVectorGroup[n].operator[](m)[0]  << ", " << linearStrandsVectorGroup[n].operator[](m)[1]  << ", " << (-linearStrandsVectorGroup[n].operator[](m)[2])  << ">, <" <<
 	    		 	   afile << "cylinder{ <0,0,0> " << //linearStrandsVectorGroup[n].operator[](m)[0]  << ", " << linearStrandsVectorGroup[n].operator[](m)[1]  << ", " << (-linearStrandsVectorGroup[n].operator[](m)[2])  << ">, <" <<
-	    		 			    ", <" <<(-bondDirection[0]) << "," << -(bondDirection[1]) <<"," << -(bondDirection[2]) << ">, "  << bond_width <<
+	    		 			    ", <" <<(-bondDirection[0]) << "," << -(bondDirection[1]) <<"," << -(bondDirection[2]) << ">, "  << ingredients.getWidthBond() <<
 	    		 			  // ingredients.getMolecules()[neighboridx][0]  << ", " << ingredients.getMolecules()[neighboridx][1]  << ", " << (-ingredients.getMolecules()[neighboridx][2])  << "> "  <<
 	    		 			 "  texture{ pigment{ gradient <"<< bondDirection[0]/bondDirection.getLength() <<"," << bondDirection[1]/bondDirection.getLength() <<"," << (bondDirection[2]/bondDirection.getLength()) <<
 	    		 			 "> color_map{ [0.0 color rgb<" << ingredients.getMolecules()[neighboridx].getColor().getX() << ", " << ingredients.getMolecules()[neighboridx].getColor().getY() << ", " << ingredients.getMolecules()[neighboridx].getColor().getZ() <<  "> ]" <<
@@ -425,7 +299,7 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	    		 			 " translate <" << (-bondDirection[0]) <<"," << -(bondDirection[1]) <<"," << -(bondDirection[2]) <<">} finish { phong 1}} translate < ";
 	    		 			//ingredients.getMolecules()[neighboridx][0]  << ", " << ingredients.getMolecules()[neighboridx][1]  << ", " << (-ingredients.getMolecules()[neighboridx][2])  << "> "  <<
 
-	    		 	   if(foldingBack == false)
+	    		 	   if(ingredients.isVisualizePBC() == false)
 	    		 	   {
 	    		 		   afile << (molecules[n][0]+ingredients.getTranslationInX())  << ", " << (molecules[n][1]+ingredients.getTranslationInY())  << ", " << (molecules[n][2]+ingredients.getTranslationInZ())  << ">";
 	    		 	   }
@@ -453,14 +327,14 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	    			                                               {
 	    			 	    		 	   //afile << "cylinder{ < " << linearStrandsVectorGroup[n].operator[](m)[0]  << ", " << linearStrandsVectorGroup[n].operator[](m)[1]  << ", " << (-linearStrandsVectorGroup[n].operator[](m)[2])  << ">, <" <<
 	    			 	    		 	   afile << "cylinder{ <0,0,0> " << //linearStrandsVectorGroup[n].operator[](m)[0]  << ", " << linearStrandsVectorGroup[n].operator[](m)[1]  << ", " << (-linearStrandsVectorGroup[n].operator[](m)[2])  << ">, <" <<
-	    			 	    		 			    ", <" <<(-bondDirection[0]) << "," << -(bondDirection[1]) <<"," << -(bondDirection[2]) << ">, "  << bond_width <<
+	    			 	    		 			    ", <" <<(-bondDirection[0]) << "," << -(bondDirection[1]) <<"," << -(bondDirection[2]) << ">, "  << ingredients.getWidthBond() <<
 	    			 	    		 			  // ingredients.getMolecules()[neighboridx][0]  << ", " << ingredients.getMolecules()[neighboridx][1]  << ", " << (-ingredients.getMolecules()[neighboridx][2])  << "> "  <<
 	    			 	    		 			 "  texture{ pigment{ gradient <"<< bondDirection[0]/bondDirection.getLength() <<"," << bondDirection[1]/bondDirection.getLength() <<"," << (bondDirection[2]/bondDirection.getLength()) <<
 	    			 	    		 			 "> color_map{ [0.0 color rgb<" << ingredients.getMolecules()[neighboridx].getColor().getX() << ", " << ingredients.getMolecules()[neighboridx].getColor().getY() << ", " << ingredients.getMolecules()[neighboridx].getColor().getZ() <<  "> ]" <<
 	    			 	    		 			 "[1.0 color rgb<" << molecules[n].getColor().getX() << ", " << molecules[n].getColor().getY() << ", " << molecules[n].getColor().getZ() <<  "> ]} scale "<< bondLength<<
 	    			 	    		 			 " translate <" << (-bondDirection[0]) <<"," << -(bondDirection[1]) <<"," << -(bondDirection[2]) <<">} finish { phong 1}} translate < ";
 
-	    			 	    		 	 if(foldingBack == false)
+	    			 	    		 	 if(ingredients.isVisualizePBC() == false)
 	    			 	    		 	 	{
 	    			 	    		 	 	    afile << (molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX())  << ", " << (molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY())  << ", " << (molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ())  << ">";
 	    			 	    		 	 	}
@@ -495,21 +369,8 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 
 
 template <class IngredientsType>
-bool LeMonADEOpenGL<IngredientsType>::screenshoot(const std::string&name) {
-
-
-}
-
-
-
-template <class IngredientsType>
 int LeMonADEOpenGL<IngredientsType>::handle(int e) {
 
-	int handled = 1;
-	//static int prev_x;
-	//static int prev_y;
-
-	//int mouse_x, mouse_y;
 	int delta_x=0, delta_y=0;
 
 	switch (e) {
@@ -517,109 +378,96 @@ int LeMonADEOpenGL<IngredientsType>::handle(int e) {
 	case FL_LEAVE: cursor(FL_CURSOR_DEFAULT); break;
 
 	case FL_MOUSEWHEEL:
-						cam.setHoldingForwardMouse(Fl::event_dy());
+		cam.setHoldingForwardMouse(Fl::event_dy());
 		break;
 
 	case FL_RELEASE:
 
-	    mouse.x = (Fl::event_x());
-	    mouse.y = (Fl::event_y());
-	    mouse.button = 0;
-	    break;
-	  case FL_PUSH:
+		mouse.x = (Fl::event_x());
+		mouse.y = (Fl::event_y());
+		mouse.button = 0;
+		break;
 
+	case FL_PUSH:
+		cam.setCamAngleYawSpeed(0.0);
+		cam.setCamAnglePitchSpeed(0.0);
 
-			cam.setCamPhiRotSpeed(0.0);
-			cam.setCamThetaRotSpeed(0.0);
-
-
-	    mouse.x = (Fl::event_x());
-	    mouse.y = (Fl::event_y());
-	    mouse.button = (Fl::event_button());
-	    break;
+		mouse.x = (Fl::event_x());
+		mouse.y = (Fl::event_y());
+		mouse.button = (Fl::event_button());
+		break;
 
 	case FL_DRAG: if(Fl::event_button1())
 	{
-		//std::std::cout << Fl::event_x() << std::endl;
 		mouse.x=Fl::event_x();
 		mouse.y=Fl::event_y();
-		delta_x=mouse.x-mouse.xold;//prev_x;
-		delta_y=mouse.y-mouse.yold;//prev_y;
+		delta_x=mouse.x-mouse.xold;
+		delta_y=mouse.y-mouse.yold;
 
-		 cam.handleMouseMove(delta_x, delta_y, boxX, boxY, boxZ);
-		 redraw();
+		cam.handleMouseMove(delta_x, delta_y, boxX, boxY, boxZ);
+		redraw();
 	}
 
-	/*	if((e.event_button1 	( 		) 	event.motion.state == SDL_BUTTON(SDL_BUTTON_LEFT)))
-	   {
-	  	  cam.handleMouseMove(event.motion.xrel, event.motion.yrel, boxX, boxY, boxZ);
-	   }  */
 	break;
 
 	case FL_KEYDOWN:
 
-			    if (int(Fl::event_key()) == int('i'))
-			      {cam.setHoldingForwardI(true);}
+		if (int(Fl::event_key()) == int('i'))
+		{cam.setHoldingForwardI(true);}
 
-			    if (int(Fl::event_key()) == int('o'))
-			      {cam.setHoldingBackwardO(true);}
+		if (int(Fl::event_key()) == int('o'))
+		{cam.setHoldingBackwardO(true);}
 
-			    if (int(Fl::event_key()) == int('w'))
-			      {cam.setHoldingUpW(true);}
+		if (int(Fl::event_key()) == int('w'))
+		{cam.setHoldingUpW(true);}
 
-			    if (int(Fl::event_key()) == int('s'))
-			      {cam.setHoldingDownS(true);}
+		if (int(Fl::event_key()) == int('s'))
+		{cam.setHoldingDownS(true);}
 
-			    if (int(Fl::event_key()) == int('a'))
-			      {cam.setHoldingLeftA(true);}
+		if (int(Fl::event_key()) == int('a'))
+		{cam.setHoldingLeftA(true);}
 
-			    if (int(Fl::event_key()) == int('d'))
-			      {cam.setHoldingRightD(true);}
+		if (int(Fl::event_key()) == int('d'))
+		{cam.setHoldingRightD(true);}
 
-			    if (int(Fl::event_key()) == int('r')) //resets camera
-			    {
-			    	//Camera rotation
-			    		  				cam.setCamPhiRot(0.0f);
-									cam.setCamThetaRot(0.0f);
+		if (int(Fl::event_key()) == int('r')) //resets camera
+		{
+			//Camera rotation
+			cam.setCamAngleYaw(0.0f);
+			cam.setCamAnglePitch(0.0f);
 
-									cam.setCamPhiRotSpeed(0.0f);
-									cam.setCamThetaRotSpeed(0.0f);
+			cam.setCamAngleYawSpeed(0.0f);
+			cam.setCamAnglePitchSpeed(0.0f);
 
-									//Camera rotation axis
-									cam.setCamThetaRotAxisX(1.0f);
-									cam.setCamThetaRotAxisZ(0.0f);
-
-		    //  glTranslatef(-cam.getCamXPos(),-cam.getCamYPos(),-cam.getCamZPos());    // Translate the model
-
-									// Camera position
-			    		  				cam.setCamXPos(0.0f);
-			    		  				cam.setCamYPos(-2*this->ingredients.getBoxY());
-			    		  				cam.setCamZPos(0.0f);
-			    		  			}
-			 break;
+			// Camera position
+			cam.setCamXPos(0.0f);
+			cam.setCamYPos(-2*this->ingredients.getBoxY());
+			cam.setCamZPos(0.0f);
+		}
+		break;
 
 	case FL_KEYUP:
 
-		    if (int(Fl::event_key()) == int('i'))
-		      {cam.setHoldingForwardI(false);}
+		if (int(Fl::event_key()) == int('i'))
+		{cam.setHoldingForwardI(false);}
 
-		    if (int(Fl::event_key()) == int('o'))
-		      {cam.setHoldingBackwardO(false);}
+		if (int(Fl::event_key()) == int('o'))
+		{cam.setHoldingBackwardO(false);}
 
-		    if (int(Fl::event_key()) == int('w'))
-		      {cam.setHoldingUpW(false);}
+		if (int(Fl::event_key()) == int('w'))
+		{cam.setHoldingUpW(false);}
 
-		    if (int(Fl::event_key()) == int('s'))
-		      {cam.setHoldingDownS(false);}
+		if (int(Fl::event_key()) == int('s'))
+		{cam.setHoldingDownS(false);}
 
-		    if (int(Fl::event_key()) == int('a'))
-		      {cam.setHoldingLeftA(false);}
+		if (int(Fl::event_key()) == int('a'))
+		{cam.setHoldingLeftA(false);}
 
-		    if (int(Fl::event_key()) == int('d'))
-		      {cam.setHoldingRightD(false);}
+		if (int(Fl::event_key()) == int('d'))
+		{cam.setHoldingRightD(false);}
 
 
-		 break;
+		break;
 	}
 
 
@@ -641,12 +489,9 @@ void LeMonADEOpenGL<IngredientsType>::initialize(){
 	boxY = this->ingredients.getBoxY();
 	boxZ = this->ingredients.getBoxZ();
 
-	//fill the groups with connected structures
-	//linearStrandsVector.setName("linearStrands");
-	//fill_connected_groups( this->ingredients.getMolecules(), linearStrandsVector, MonomerGroup<typename IngredientsType::molecules_type>(&(this->ingredients.getMolecules())),alwaysTrue() );
-
 	// in the first frame we color all monomer from red to blue
-		 /*	for(size_t n=0; n< linearStrandsVectorGroup.size(); ++n){
+	/*
+	 	 	for(size_t n=0; n< linearStrandsVectorGroup.size(); ++n){
 		 		  float colorvar = 1./(linearStrandsVectorGroup.size())*n;
 
 		 		  for(size_t m=0; m< linearStrandsVectorGroup[n].size(); ++m){
@@ -657,13 +502,14 @@ void LeMonADEOpenGL<IngredientsType>::initialize(){
 
 		 		  }
 		 		}
-		 	*/
+	 */
 
 	for(size_t n=0; n< molecules.size(); ++n){
-			 		  float colorvar = 1./(molecules.size())*n;
-			 		  	  ingredients.modifyMolecules()[n].setColor(colorvar, 0, 1-colorvar);
+		float colorvar = 1./(molecules.size())*n;
+		ingredients.modifyMolecules()[n].setColor(colorvar, 0, 1-colorvar);
 
-			 		}
+	}
+
 	precalculateSphere(ingredients.getSubdivisionSpheres(),ingredients.getSubdivisionSpheres());
 
 }
@@ -671,20 +517,36 @@ void LeMonADEOpenGL<IngredientsType>::initialize(){
 template <class IngredientsType>
 void LeMonADEOpenGL<IngredientsType>::draw(){
 
+	// maybe the window has resized or similar
 	if (!valid()) {
 
 		glLoadIdentity();
 
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);           //schwarzer Hintergrund (dazu mehr in der render-Funktion)
+		// background color
+		glClearColor(ingredients.getBGcolor()[0], ingredients.getBGcolor()[1], ingredients.getBGcolor()[2], 0.0f);
 
-		glShadeModel(GL_SMOOTH);                        //weichere Farbübergänge auf Körpern
+		// color smoothing
+		glShadeModel(GL_SMOOTH);
+
+		// Enable depth testing
+		glEnable(GL_DEPTH_TEST);
+
+	    // Clear the entire depth of the depth buffer
+		glClearDepth(1.0f);
+
+		// Set our depth function to overwrite if new value less than or equal to current value
+		glDepthFunc(GL_LEQUAL);
+
+		// Ask for nicest perspective correction
+		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+
 
 		GLint windowWidth = this->w();
 		GLint windowHeight = this->h();
 
-		GLfloat fieldOfView = 45.0f;                 // Define our field of view (i.e. how quickly foreshortening occurs)
-		GLfloat near        = 1.0f;                  // The near (Z Axis) point of our viewing frustrum (default 1.0f)
-		GLfloat far         = 1500.0f;               // The far  (Z Axis) point of our viewing frustrum (default 1500.0f)
+		GLfloat fieldOfView = 45.0f;  // Define our field of view (i.e. how quickly foreshortening occurs)
+		GLfloat near        = 1.0f;   // The near (Z Axis) point of our viewing frustrum (default 1.0f)
+		GLfloat far         = 1500.0f;// The far  (Z Axis) point of our viewing frustrum (default 1500.0f)
 
 		// Setup our viewport to be the entire size of the window
 		glViewport(0, 0, (GLsizei)windowWidth, (GLsizei)windowHeight);
@@ -701,36 +563,18 @@ void LeMonADEOpenGL<IngredientsType>::draw(){
 		GLfloat fH = tan( float(fieldOfView / 360.0f * 3.14159f) ) * near;
 		GLfloat fW = fH * aspectRatio;
 
-		std::cout << "Width: " << windowWidth << std::endl;
-		std::cout << "Height: " << windowHeight << std::endl;
-		std::cout << "aspectRatio: " << aspectRatio << std::endl;
-
 		glFrustum(-fW, fW, -fH, fH, near, far);
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
-		// ----- OpenGL settings -----
 
-				    glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Set out clear colour to black, full alpha
-
-				    glShadeModel(GL_SMOOTH);    // Enable (gouraud) shading
-
-				    glEnable(GL_DEPTH_TEST);    // Enable depth testing
-
-				    glClearDepth(1.0f);         // Clear the entire depth of the depth buffer
-
-				    glDepthFunc(GL_LEQUAL);		// Set our depth function to overwrite if new value less than or equal to current value
-
-				    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST); // Ask for nicest perspective correction
-
-				    //glEnable(GL_CULL_FACE); // Do not draw polygons facing away from us
-
-				    glLineWidth(2.0f);			// Set a 'chunky' line width
 
 	}
 	// Clear the screen and depth buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glClearColor(ingredients.getBGcolor()[0], ingredients.getBGcolor()[1], ingredients.getBGcolor()[2], 0.0f); // color background
 
 	// Reset the matrix
 	glMatrixMode(GL_MODELVIEW);
@@ -738,43 +582,37 @@ void LeMonADEOpenGL<IngredientsType>::draw(){
 
 
 	// Move the simulation box to the right position in space
-	//glTranslatef(-cam.getCamXPos(),-cam.getCamYPos(),-cam.getCamZPos());
-
-/*
-//std::cout << cam.getViewXPos() << " " << cam.getViewYPos()<< " " << cam.getViewZPos() << std::endl;
-	float distance = sqrtf(cam.getCamXPos()*cam.getCamXPos()+cam.getCamYPos()*cam.getCamYPos()+cam.getCamZPos()*cam.getCamZPos());
-	glTranslated(0.0, 0.0, -distance);
-	glRotatef(-90.0, 1.0f, 0.0f, 0.0f);
-	//glTranslatef(-0.5*boxX, -0.5*boxY, -0.5*boxZ);
-	//glRotated(-twist, 0.0, 0.0, 1.0);
-		      glRotated(-cam.getCamThetaRot(), 1.0, 0.0, 0.0);
-		      glRotated(cam.getCamPhiRot(), 0.0, 0.0, 1.0);
-		      //glTranslatef(-0.5*boxX, -0.5*boxY, -0.5*boxZ);
-		      glTranslatef(-0.5*boxX+cam.getViewXPos(), -0.5*boxY+cam.getViewYPos(), -0.5*boxZ+cam.getViewZPos());
-*/
 	glTranslatef(-cam.getCamXPos(),cam.getCamZPos(),cam.getCamYPos());
 
 	glRotatef(-90.0, 1.0f, 0.0f, 0.0f);
 	//Rotate the simulation box accordingly to the calculated "camera rotation" angles
 	//Rotation around center of the simulation box
-	glRotatef(cam.getCamPhiRot(), 0.0f, 0.0f, 1.0f);
-	glRotatef(-cam.getCamThetaRot(), 1.0f, 0.0f, 0.0f);
+	glRotatef(cam.getCamAngleYaw(), 0.0f, 0.0f, 1.0f);
+	glRotatef(-cam.getCamAnglePitch(), 1.0f, 0.0f, 0.0f);
 	//glRotatef(cam.getCamThetaRot(), -cam.getCamThetaRotAxisX(), 0.0f, -cam.getCamThetaRotAxisZ());
 	//move the simulation box with the center into the origin of coordinates
 	glTranslatef(-0.5*boxX, -0.5*boxY, -0.5*boxZ);
 
-	//glPushMatrix();
 
-	//glTranslatef(0.0f, 200.0f, 0.0f);
+	// draw the scene
+	draw_coordinate_system();
+	draw_monomers();
+	draw_bonds();
 
-	//drawGround();
+	// rotate or move the camera between input and frame delay
+	cam.calculateCameraMovement();
 
-	//  glPopMatrix();
+	// Move our camera
+	cam.moveCamera();
 
 
-	//   glTranslatef(0.0f, 0.0f, -128.0f); //everything is now relativ to this
+}
 
+template <class IngredientsType>
+void LeMonADEOpenGL<IngredientsType>::draw_coordinate_system()
+{
 	glLineWidth(2.0);
+
 	// drawing the horizontal edges of the box
 	glBegin(GL_LINE_LOOP);
 	glColor3f(1, 1, 1);
@@ -824,47 +662,33 @@ void LeMonADEOpenGL<IngredientsType>::draw(){
 	glVertex3f(-10, -10, -10+boxZ);
 	glEnd();
 
-	draw_monomers_fkt(1, foldingBack);
-	show_bonds_fkt( showingBonds, foldingBack);
-
-	//  SDL_GL_SwapBuffers();
-
-
-	cam.calculateCameraMovement();
-
-	// Move our camera
-	cam.moveCamera();
-
-	//  SDL_Delay(100);
 }
 
+// todo: simplify this
 template <class IngredientsType>
-void LeMonADEOpenGL<IngredientsType>::draw_monomers_fkt(bool smoothing, bool foldingBack){
+void LeMonADEOpenGL<IngredientsType>::draw_monomers(){
 
 	// drawing the monomers (represented by cubes) and sorted by groups (e.g. chains), which are represented by using different colors
 
-	if (ingredients.isSmoothing() == false) {
-
-
-
-		if (foldingBack == true) {
-
-			if (ingredients.isDrawingMonomersAsSpheres() == false) {
-				for(size_t n=0; n< molecules.size(); ++n){
-
-						if(molecules[n].isVisible())
-						{
-							float x_draw = ((((molecules[n][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX);
-							float y_draw = ((((molecules[n][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY);
-							float z_draw = ((((molecules[n][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ);
-							glPointSize(molecules[n].getRadius()*10.0f);
-							glBegin(GL_POINTS);
-							// glColor3f(colorvar, 0, 1-colorvar);
-							glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
-							glVertex3f(x_draw, y_draw, z_draw);
-							glEnd();
-						}
-
+	if (ingredients.isSmoothing() == false)
+	{
+		if (ingredients.isVisualizePBC() == true)
+		{
+			if (ingredients.isDrawingMonomersAsSpheres() == false)
+			{
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
+					if(molecules[n].isVisible())
+					{
+						float x_draw = ((((molecules[n][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX);
+						float y_draw = ((((molecules[n][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY);
+						float z_draw = ((((molecules[n][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ);
+						glPointSize(molecules[n].getRadius()*10.0f);
+						glBegin(GL_POINTS);
+						glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
+						glVertex3f(x_draw, y_draw, z_draw);
+						glEnd();
+					}
 				}
 			}
 			else
@@ -872,128 +696,110 @@ void LeMonADEOpenGL<IngredientsType>::draw_monomers_fkt(bool smoothing, bool fol
 				const int subdivision = ingredients.getSubdivisionSpheres();
 				const int subdivisionOffset = ingredients.getSubdivisionSpheres()+1;
 
-				for(size_t n=0; n< molecules.size(); ++n){
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
+					if(molecules[n].isVisible())
+					{
+						float x_draw = ((((molecules[n][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX);
+						float y_draw = ((((molecules[n][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY);
+						float z_draw = ((((molecules[n][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ);
 
-						if(molecules[n].isVisible())
+						float radius = molecules[n].getRadius();
+
+						glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
+
+						for(int lats = 0; lats < subdivision; lats++)
 						{
-							float x_draw = ((((molecules[n][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX);
-							float y_draw = ((((molecules[n][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY);
-							float z_draw = ((((molecules[n][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ);
-
-							float radius = molecules[n].getRadius();
-
-
-							glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
-
-							for(int lats = 0; lats < subdivision; lats++)
+							// One latitudinal triangle strip.
+							glBegin(GL_TRIANGLE_STRIP);
+							for(int longs = 0; longs <= subdivision; longs++)
 							{
-								// One latitudinal triangle strip.
-								glBegin(GL_TRIANGLE_STRIP);
-								for(int longs = 0; longs <= subdivision; longs++)
-								{
-									glVertex3f(radius*xSphere1[longs+lats*subdivisionOffset] +x_draw, radius*ySphere1[longs+lats*subdivisionOffset]+ y_draw, radius*zSphere1[longs+lats*subdivisionOffset] + z_draw);
-
-									glVertex3f(radius*xSphere2[longs+lats*subdivisionOffset] +x_draw, radius*ySphere2[longs+lats*subdivisionOffset] + y_draw, radius*zSphere2[longs+lats*subdivisionOffset] + z_draw);
-
-								}
-								glEnd();
+								glVertex3f(radius*xSphere1[longs+lats*subdivisionOffset] +x_draw, radius*ySphere1[longs+lats*subdivisionOffset] + y_draw, radius*zSphere1[longs+lats*subdivisionOffset] + z_draw);
+								glVertex3f(radius*xSphere2[longs+lats*subdivisionOffset] +x_draw, radius*ySphere2[longs+lats*subdivisionOffset] + y_draw, radius*zSphere2[longs+lats*subdivisionOffset] + z_draw);
 							}
+							glEnd();
 						}
-
+					}
 				}
 			}
 		}
 
-		else {
-
-			if (ingredients.isDrawingMonomersAsSpheres() == false) {
-				for(size_t n=0; n< molecules.size(); ++n){
-
-
-						if(molecules[n].isVisible())
-						{
-							float x_draw = molecules[n][0]+ingredients.getTranslationInX();
-							float y_draw = molecules[n][1]+ingredients.getTranslationInY();
-							float z_draw = molecules[n][2]+ingredients.getTranslationInZ();
-							glPointSize(molecules[n].getRadius()*10.0f);
-							glBegin(GL_POINTS);
-							glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
-
-							//glColor3f(colorvar, 0, 1-colorvar);
-							glVertex3f(x_draw, y_draw, z_draw);
-							glEnd();
-
-
-						}
-
+		else
+		{
+			if (ingredients.isDrawingMonomersAsSpheres() == false)
+			{
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
+					if(molecules[n].isVisible())
+					{
+						float x_draw = molecules[n][0]+ingredients.getTranslationInX();
+						float y_draw = molecules[n][1]+ingredients.getTranslationInY();
+						float z_draw = molecules[n][2]+ingredients.getTranslationInZ();
+						glPointSize(molecules[n].getRadius()*10.0f);
+						glBegin(GL_POINTS);
+						glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
+						glVertex3f(x_draw, y_draw, z_draw);
+						glEnd();
+					}
 				}
-
-
-
 			}
 			else
 			{
 				const int subdivision = ingredients.getSubdivisionSpheres();
 				const int subdivisionOffset = ingredients.getSubdivisionSpheres()+1;
 
-				for(size_t n=0; n< molecules.size(); ++n){
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
+					if(molecules[n].isVisible())
+					{
+						float x_draw = molecules[n][0]+ingredients.getTranslationInX();
+						float y_draw = molecules[n][1]+ingredients.getTranslationInY();
+						float z_draw = molecules[n][2]+ingredients.getTranslationInZ();
 
+						float radius = molecules[n].getRadius();
 
-						if(molecules[n].isVisible())
+						glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
+
+						for(int lats = 0; lats < subdivision; lats++)
 						{
-							float x_draw = molecules[n][0]+ingredients.getTranslationInX();
-							float y_draw = molecules[n][1]+ingredients.getTranslationInY();
-							float z_draw = molecules[n][2]+ingredients.getTranslationInZ();
-
-							float radius = molecules[n].getRadius();
-
-
-							glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
-
-							for(int lats = 0; lats < subdivision; lats++)
+							// One latitudinal triangle strip.
+							glBegin(GL_TRIANGLE_STRIP);
+							for(int longs = 0; longs <= subdivision; longs++)
 							{
-								// One latitudinal triangle strip.
-								glBegin(GL_TRIANGLE_STRIP);
-								for(int longs = 0; longs <= subdivision; longs++)
-								{
-									glVertex3f(radius*xSphere1[longs+lats*subdivisionOffset] +x_draw, radius*ySphere1[longs+lats*subdivisionOffset]+ y_draw, radius*zSphere1[longs+lats*subdivisionOffset] + z_draw);
+								glVertex3f(radius*xSphere1[longs+lats*subdivisionOffset] +x_draw, radius*ySphere1[longs+lats*subdivisionOffset]+ y_draw, radius*zSphere1[longs+lats*subdivisionOffset] + z_draw);
 
-									glVertex3f(radius*xSphere2[longs+lats*subdivisionOffset] +x_draw, radius*ySphere2[longs+lats*subdivisionOffset] + y_draw, radius*zSphere2[longs+lats*subdivisionOffset] + z_draw);
+								glVertex3f(radius*xSphere2[longs+lats*subdivisionOffset] +x_draw, radius*ySphere2[longs+lats*subdivisionOffset] + y_draw, radius*zSphere2[longs+lats*subdivisionOffset] + z_draw);
 
-								}
-								glEnd();
 							}
+							glEnd();
 						}
-
+					}
 				}
 			}
-
 		}
-
 	}
 	//smoothing here
-	else{
-		if (foldingBack == true) {
-			// glPointSize(point_size*10.0f);
+	else
+	{
+		if (ingredients.isVisualizePBC() == true)
+		{
+			if (ingredients.isDrawingMonomersAsSpheres() == false)
+			{
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
+					if(molecules[n].isVisible())
+					{
+						float x_draw = mod((mod(molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX) )+boxX, boxX);
+						float y_draw = mod((mod(molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) )+boxY, boxY);
+						float z_draw = mod((mod(molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) )+boxZ, boxZ);
+						glPointSize(molecules[n].getRadius()*10.0f);
+						glBegin(GL_POINTS);
+						glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
 
-			if (ingredients.isDrawingMonomersAsSpheres() == false) {
-				for(size_t n=0; n< molecules.size(); ++n){
-
-
-						if(molecules[n].isVisible())
-						{
-							float x_draw = mod((mod(molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX) )+boxX, boxX);
-							float y_draw = mod((mod(molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) )+boxY, boxY);
-							float z_draw = mod((mod(molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) )+boxZ, boxZ);
-							glPointSize(molecules[n].getRadius()*10.0f);
-							glBegin(GL_POINTS);
-							glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
-
-							//glColor3f(colorvar, 0, 1-colorvar);
-							glVertex3f(x_draw, y_draw, z_draw);
-							glEnd();
-						}
-
+						//glColor3f(colorvar, 0, 1-colorvar);
+						glVertex3f(x_draw, y_draw, z_draw);
+						glEnd();
+					}
 				}
 			}
 			else
@@ -1001,251 +807,124 @@ void LeMonADEOpenGL<IngredientsType>::draw_monomers_fkt(bool smoothing, bool fol
 				const int subdivision = ingredients.getSubdivisionSpheres();
 				const int subdivisionOffset = ingredients.getSubdivisionSpheres()+1;
 
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
+					if(molecules[n].isVisible())
+					{
+						float x_draw = mod((mod(molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX) )+boxX, boxX);
+						float y_draw = mod((mod(molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) )+boxY, boxY);
+						float z_draw = mod((mod(molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) )+boxZ, boxZ);
+						float radius = molecules[n].getRadius();
 
-				for(size_t n=0; n< molecules.size(); ++n){
+						glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
 
-
-						if(molecules[n].isVisible())
+						for(int lats = 0; lats < subdivision; lats++)
 						{
-							float x_draw = mod((mod(molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX) )+boxX, boxX);
-							float y_draw = mod((mod(molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) )+boxY, boxY);
-							float z_draw = mod((mod(molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) )+boxZ, boxZ);
-							float radius = molecules[n].getRadius();
-
-
-							glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
-
-							for(int lats = 0; lats < subdivision; lats++)
+							// One latitudinal triangle strip.
+							glBegin(GL_TRIANGLE_STRIP);
+							for(int longs = 0; longs <= subdivision; longs++)
 							{
-								// One latitudinal triangle strip.
-								glBegin(GL_TRIANGLE_STRIP);
-								for(int longs = 0; longs <= subdivision; longs++)
-								{
-									glVertex3f(radius*xSphere1[longs+lats*subdivisionOffset] +x_draw, radius*ySphere1[longs+lats*subdivisionOffset]+ y_draw, radius*zSphere1[longs+lats*subdivisionOffset] + z_draw);
-
-									glVertex3f(radius*xSphere2[longs+lats*subdivisionOffset] +x_draw, radius*ySphere2[longs+lats*subdivisionOffset] + y_draw, radius*zSphere2[longs+lats*subdivisionOffset] + z_draw);
-
-								}
-								glEnd();
+								glVertex3f(radius*xSphere1[longs+lats*subdivisionOffset] +x_draw, radius*ySphere1[longs+lats*subdivisionOffset] + y_draw, radius*zSphere1[longs+lats*subdivisionOffset] + z_draw);
+								glVertex3f(radius*xSphere2[longs+lats*subdivisionOffset] +x_draw, radius*ySphere2[longs+lats*subdivisionOffset] + y_draw, radius*zSphere2[longs+lats*subdivisionOffset] + z_draw);
 							}
-						}
-
-				}
-			}
-
-		}
-		else{
-			//glPointSize(point_size*10.0f);
-
-			if (ingredients.isDrawingMonomersAsSpheres() == false) {
-				for(size_t n=0; n< molecules.size(); ++n){
-
-
-						if(molecules[n].isVisible())
-						{
-							float x_draw = molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX();
-							float y_draw = molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY();
-							float z_draw = molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ();
-							glPointSize(molecules[n].getRadius()*10.0f);
-							glBegin(GL_POINTS);
-							glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
-
-							//glColor3f(colorvar, 0, 1-colorvar);
-							glVertex3f(x_draw, y_draw, z_draw);
 							glEnd();
 						}
-
+					}
 				}
+			}
+		}
+		else
+		{
+			if (ingredients.isDrawingMonomersAsSpheres() == false)
+			{
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
+					if(molecules[n].isVisible())
+					{
+						float x_draw = molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX();
+						float y_draw = molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY();
+						float z_draw = molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ();
+						glPointSize(molecules[n].getRadius()*10.0f);
+						glBegin(GL_POINTS);
+						glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
 
+						//glColor3f(colorvar, 0, 1-colorvar);
+						glVertex3f(x_draw, y_draw, z_draw);
+						glEnd();
+					}
+				}
 			}
 			else
 			{
 				const int subdivision = ingredients.getSubdivisionSpheres();
 				const int subdivisionOffset = ingredients.getSubdivisionSpheres()+1;
 
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
+					if(molecules[n].isVisible())
+					{
+						float x_draw = molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX();
+						float y_draw = molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY();
+						float z_draw = molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ();
 
-				for(size_t n=0; n< molecules.size(); ++n){
+						float radius = molecules[n].getRadius();
 
+						glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
 
-						if(molecules[n].isVisible())
+						for(int lats = 0; lats < subdivision; lats++)
 						{
-							float x_draw = molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX();
-							float y_draw = molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY();
-							float z_draw = molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ();
-
-							float radius = molecules[n].getRadius();
-
-
-							glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());
-
-							for(int lats = 0; lats < subdivision; lats++)
+							// One latitudinal triangle strip.
+							glBegin(GL_TRIANGLE_STRIP);
+							for(int longs = 0; longs <= subdivision; longs++)
 							{
-								// One latitudinal triangle strip.
-								glBegin(GL_TRIANGLE_STRIP);
-								for(int longs = 0; longs <= subdivision; longs++)
-								{
-									glVertex3f(radius*xSphere1[longs+lats*subdivisionOffset] +x_draw, radius*ySphere1[longs+lats*subdivisionOffset]+ y_draw, radius*zSphere1[longs+lats*subdivisionOffset] + z_draw);
-
-									glVertex3f(radius*xSphere2[longs+lats*subdivisionOffset] +x_draw, radius*ySphere2[longs+lats*subdivisionOffset] + y_draw, radius*zSphere2[longs+lats*subdivisionOffset] + z_draw);
-
-								}
-								glEnd();
+								glVertex3f(radius*xSphere1[longs+lats*subdivisionOffset] +x_draw, radius*ySphere1[longs+lats*subdivisionOffset] + y_draw, radius*zSphere1[longs+lats*subdivisionOffset] + z_draw);
+								glVertex3f(radius*xSphere2[longs+lats*subdivisionOffset] +x_draw, radius*ySphere2[longs+lats*subdivisionOffset] + y_draw, radius*zSphere2[longs+lats*subdivisionOffset] + z_draw);
 							}
-
+							glEnd();
 						}
-
+					}
 				}
 			}
-
 		}
-
 	}
-
-
 }
 
+// todo: simplify this
 template <class IngredientsType>
-void LeMonADEOpenGL<IngredientsType>::show_bonds_fkt(bool showingBonds, bool foldingBack) {
+void LeMonADEOpenGL<IngredientsType>::draw_bonds()
+{
 
-	if (showingBonds == true) {
+	if (ingredients.isVisualizeBonds() == true)
+	{
+		if (ingredients.isSmoothing() == false)
+		{
+			if (ingredients.isVisualizePBC() == true)
+			{
+				glLineWidth(ingredients.getWidthBond()*10);
 
-		if (ingredients.isSmoothing() == false) {
-			if (foldingBack == true) {
-				glLineWidth(bond_width);
-
-				for(size_t n=0; n< molecules.size(); ++n){
-
-						if(molecules[n].isVisible())
-						{
-							//size_t linkcount = linearStrandsVectorGroup[n].copyGroup().getNumLinks(m);	// check for the number of links the current monomer has
-							size_t linkcount = ingredients.getMolecules().getNumLinks(n);
-
-							float x_draw_mono_orig = ((((molecules[n][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX);
-							float y_draw_mono_orig = ((((molecules[n][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY);
-							float z_draw_mono_orig = ((((molecules[n][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ);
-
-
-							for(size_t nn=0; nn < linkcount; ++nn){
-
-								//size_t neighboridx = linearStrandsVectorGroup[n].copyGroup().getNeighborIdx(m, nn); 	// search for the monomers connected to the current
-								size_t neighboridx = ingredients.getMolecules().getNeighborIdx(n, nn);
-
-															//draw only one bond
-															if(neighboridx < n)
-															{
-								//float x_draw_mono_nn = ((((linearStrandsVectorGroup[n].operator[](neighboridx)[0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX);
-								//float y_draw_mono_nn = ((((linearStrandsVectorGroup[n].operator[](neighboridx)[1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY);
-								//float z_draw_mono_nn = ((((linearStrandsVectorGroup[n].operator[](neighboridx)[2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ);
-
-								float x_draw_mono_nn = ((((ingredients.getMolecules()[neighboridx][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX);
-								float y_draw_mono_nn = ((((ingredients.getMolecules()[neighboridx][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY);
-								float z_draw_mono_nn = ((((ingredients.getMolecules()[neighboridx][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ);
-
-
-
-								if((x_draw_mono_orig-x_draw_mono_nn)*(x_draw_mono_orig-x_draw_mono_nn)+(y_draw_mono_orig-y_draw_mono_nn)*(y_draw_mono_orig-y_draw_mono_nn)+(z_draw_mono_orig-z_draw_mono_nn)*(z_draw_mono_orig-z_draw_mono_nn) <= 20)
-								{
-									glBegin(GL_LINES);						// draw bond
-									glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());				// set the bond color
-									glVertex3f(x_draw_mono_orig, y_draw_mono_orig, z_draw_mono_orig);
-									glColor3f(ingredients.getMolecules()[neighboridx].getColor().getX(), ingredients.getMolecules()[neighboridx].getColor().getY(), ingredients.getMolecules()[neighboridx].getColor().getZ());				// set the bond color
-									glVertex3f(x_draw_mono_nn, y_draw_mono_nn, z_draw_mono_nn);
-									glEnd();
-								}
-															}
-							}
-
-
-						}
-
-				}
-
-			}
-			else
-			{			  glLineWidth(bond_width);
-
-			for(size_t n=0; n< molecules.size(); ++n){
-
-
-
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
 					if(molecules[n].isVisible())
 					{
 						//size_t linkcount = linearStrandsVectorGroup[n].copyGroup().getNumLinks(m);	// check for the number of links the current monomer has
 						size_t linkcount = ingredients.getMolecules().getNumLinks(n);
 
-
-						float x_draw_mono_orig = (molecules[n][0]+ingredients.getTranslationInX());
-						float y_draw_mono_orig = (molecules[n][1]+ingredients.getTranslationInY());
-						float z_draw_mono_orig = (molecules[n][2]+ingredients.getTranslationInZ());
+						float x_draw_mono_orig = ((((molecules[n][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX);
+						float y_draw_mono_orig = ((((molecules[n][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY);
+						float z_draw_mono_orig = ((((molecules[n][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ);
 
 
 						for(size_t nn=0; nn < linkcount; ++nn){
+
 							//size_t neighboridx = linearStrandsVectorGroup[n].copyGroup().getNeighborIdx(m, nn); 	// search for the monomers connected to the current
 							size_t neighboridx = ingredients.getMolecules().getNeighborIdx(n, nn);
 
 							//draw only one bond
 							if(neighboridx < n)
 							{
-							//float x_draw_mono_nn = linearStrandsVectorGroup[n].operator[](neighboridx)[0]+ingredients.getTranslationInX();
-							//float y_draw_mono_nn = linearStrandsVectorGroup[n].operator[](neighboridx)[1]+ingredients.getTranslationInY();
-							//float z_draw_mono_nn = linearStrandsVectorGroup[n].operator[](neighboridx)[2]+ingredients.getTranslationInZ();
-
-							float x_draw_mono_nn = ingredients.getMolecules()[neighboridx][0]+ingredients.getTranslationInX();
-							float y_draw_mono_nn = ingredients.getMolecules()[neighboridx][1]+ingredients.getTranslationInY();
-							float z_draw_mono_nn = ingredients.getMolecules()[neighboridx][2]+ingredients.getTranslationInZ();
-
-
-							glBegin(GL_LINES);						// draw bond
-							glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());				// set the bond color
-							glVertex3f(x_draw_mono_orig, y_draw_mono_orig, z_draw_mono_orig);
-							glColor3f(ingredients.getMolecules()[neighboridx].getColor().getX(), ingredients.getMolecules()[neighboridx].getColor().getY(), ingredients.getMolecules()[neighboridx].getColor().getZ());				// set the bond color
-							glVertex3f(x_draw_mono_nn, y_draw_mono_nn, z_draw_mono_nn);
-							glEnd();
-							}
-						}
-
-
-					}
-
-			}
-
-			}
-
-		}
-		else // smoothing true
-		{
-
-
-			if (foldingBack == true) {
-				glLineWidth(bond_width);
-
-				for(size_t n=0; n< molecules.size(); ++n){
-
-						if(molecules[n].isVisible())
-						{
-							//size_t linkcount = linearStrandsVectorGroup[n].copyGroup().getNumLinks(m);	// check for the number of links the current monomer has
-							size_t linkcount = ingredients.getMolecules().getNumLinks(n);
-
-							float x_draw_mono_orig = mod((mod(molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX) )+boxX, boxX);
-							float y_draw_mono_orig = mod((mod(molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) )+boxY, boxY);
-							float z_draw_mono_orig = mod((mod(molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) )+boxZ, boxZ);
-
-
-							for(size_t nn=0; nn < linkcount; ++nn){
-								//size_t neighboridx = linearStrandsVectorGroup[n].copyGroup().getNeighborIdx(m, nn); 	// search for the monomers connected to the current
-								size_t neighboridx = ingredients.getMolecules().getNeighborIdx(n, nn);
-
-															//draw only one bond
-															if(neighboridx < n)
-															{
-
-								//float x_draw_mono_nn = mod((mod(linearStrandsVectorGroup[n].operator[](neighboridx).getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX) )+boxX, boxX);
-								//float y_draw_mono_nn = mod((mod(linearStrandsVectorGroup[n].operator[](neighboridx).getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) )+boxY, boxY);
-								//float z_draw_mono_nn = mod((mod(linearStrandsVectorGroup[n].operator[](neighboridx).getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) )+boxZ, boxZ);
-								float x_draw_mono_nn = mod((mod(ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX) )+boxX, boxX);
-								float y_draw_mono_nn = mod((mod(ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) )+boxY, boxY);
-								float z_draw_mono_nn = mod((mod(ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) )+boxZ, boxZ);
-
+								float x_draw_mono_nn = ((((ingredients.getMolecules()[neighboridx][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX);
+								float y_draw_mono_nn = ((((ingredients.getMolecules()[neighboridx][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY);
+								float z_draw_mono_nn = ((((ingredients.getMolecules()[neighboridx][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ);
 
 								if((x_draw_mono_orig-x_draw_mono_nn)*(x_draw_mono_orig-x_draw_mono_nn)+(y_draw_mono_orig-y_draw_mono_nn)*(y_draw_mono_orig-y_draw_mono_nn)+(z_draw_mono_orig-z_draw_mono_nn)*(z_draw_mono_orig-z_draw_mono_nn) <= 20)
 								{
@@ -1256,71 +935,131 @@ void LeMonADEOpenGL<IngredientsType>::show_bonds_fkt(bool showingBonds, bool fol
 									glVertex3f(x_draw_mono_nn, y_draw_mono_nn, z_draw_mono_nn);
 									glEnd();
 								}
-															}
 							}
-
-
 						}
-
+					}
 				}
-
 			}
 			else
-			{			  glLineWidth(bond_width);
+			{
+				glLineWidth(ingredients.getWidthBond()*10);
 
-			for(size_t n=0; n< molecules.size(); ++n){
-
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
 					if(molecules[n].isVisible())
 					{
 						//size_t linkcount = linearStrandsVectorGroup[n].copyGroup().getNumLinks(m);	// check for the number of links the current monomer has
+						size_t linkcount = ingredients.getMolecules().getNumLinks(n);
+
+						float x_draw_mono_orig = (molecules[n][0]+ingredients.getTranslationInX());
+						float y_draw_mono_orig = (molecules[n][1]+ingredients.getTranslationInY());
+						float z_draw_mono_orig = (molecules[n][2]+ingredients.getTranslationInZ());
+
+						for(size_t nn=0; nn < linkcount; ++nn){
+
+							size_t neighboridx = ingredients.getMolecules().getNeighborIdx(n, nn);
+
+							//draw only one bond
+							if(neighboridx < n)
+							{
+								float x_draw_mono_nn = ingredients.getMolecules()[neighboridx][0]+ingredients.getTranslationInX();
+								float y_draw_mono_nn = ingredients.getMolecules()[neighboridx][1]+ingredients.getTranslationInY();
+								float z_draw_mono_nn = ingredients.getMolecules()[neighboridx][2]+ingredients.getTranslationInZ();
+
+								glBegin(GL_LINES);						// draw bond
+								glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());				// set the bond color
+								glVertex3f(x_draw_mono_orig, y_draw_mono_orig, z_draw_mono_orig);
+								glColor3f(ingredients.getMolecules()[neighboridx].getColor().getX(), ingredients.getMolecules()[neighboridx].getColor().getY(), ingredients.getMolecules()[neighboridx].getColor().getZ());				// set the bond color
+								glVertex3f(x_draw_mono_nn, y_draw_mono_nn, z_draw_mono_nn);
+								glEnd();
+							}
+						}
+					}
+				}
+			}
+		}
+		else // smoothing true
+		{
+			if (ingredients.isVisualizePBC() == true)
+			{
+				glLineWidth(ingredients.getWidthBond()*10);
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
+					if(molecules[n].isVisible())
+					{
+						size_t linkcount = ingredients.getMolecules().getNumLinks(n);
+
+						float x_draw_mono_orig = mod((mod(molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX) )+boxX, boxX);
+						float y_draw_mono_orig = mod((mod(molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) )+boxY, boxY);
+						float z_draw_mono_orig = mod((mod(molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) )+boxZ, boxZ);
+
+						for(size_t nn=0; nn < linkcount; ++nn)
+						{
+							size_t neighboridx = ingredients.getMolecules().getNeighborIdx(n, nn);
+
+							//draw only one bond
+							if(neighboridx < n)
+							{
+
+								float x_draw_mono_nn = mod((mod(ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX) )+boxX, boxX);
+								float y_draw_mono_nn = mod((mod(ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) )+boxY, boxY);
+								float z_draw_mono_nn = mod((mod(ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) )+boxZ, boxZ);
+
+								if((x_draw_mono_orig-x_draw_mono_nn)*(x_draw_mono_orig-x_draw_mono_nn)+(y_draw_mono_orig-y_draw_mono_nn)*(y_draw_mono_orig-y_draw_mono_nn)+(z_draw_mono_orig-z_draw_mono_nn)*(z_draw_mono_orig-z_draw_mono_nn) <= 20)
+								{
+									glBegin(GL_LINES);						// draw bond
+									glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());				// set the bond color
+									glVertex3f(x_draw_mono_orig, y_draw_mono_orig, z_draw_mono_orig);
+									glColor3f(ingredients.getMolecules()[neighboridx].getColor().getX(), ingredients.getMolecules()[neighboridx].getColor().getY(), ingredients.getMolecules()[neighboridx].getColor().getZ());				// set the bond color
+									glVertex3f(x_draw_mono_nn, y_draw_mono_nn, z_draw_mono_nn);
+									glEnd();
+								}
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				glLineWidth(ingredients.getWidthBond()*10);
+
+				for(size_t n=0; n< molecules.size(); ++n)
+				{
+					if(molecules[n].isVisible())
+					{
 						size_t linkcount = ingredients.getMolecules().getNumLinks(n);
 
 						float x_draw_mono_orig = molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX();
 						float y_draw_mono_orig = molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY();
 						float z_draw_mono_orig = molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ();
 
-
 						for(size_t nn=0; nn < linkcount; ++nn){
-							//size_t neighboridx = linearStrandsVectorGroup[n].copyGroup().getNeighborIdx(m, nn); 	// search for the monomers connected to the current
 							size_t neighboridx = ingredients.getMolecules().getNeighborIdx(n, nn);
 
-																						//draw only one bond
-																						if(neighboridx < n)
-																						{
+							//draw only one bond
+							if(neighboridx < n)
+							{
+								float x_draw_mono_nn = ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[0]+ingredients.getTranslationInX();
+								float y_draw_mono_nn = ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[1]+ingredients.getTranslationInY();
+								float z_draw_mono_nn = ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[2]+ingredients.getTranslationInZ();
 
-							//float x_draw_mono_nn = linearStrandsVectorGroup[n].operator[](neighboridx).getSmoothCoordinate()[0]+ingredients.getTranslationInX();
-							//float y_draw_mono_nn = linearStrandsVectorGroup[n].operator[](neighboridx).getSmoothCoordinate()[1]+ingredients.getTranslationInY();
-							//float z_draw_mono_nn = linearStrandsVectorGroup[n].operator[](neighboridx).getSmoothCoordinate()[2]+ingredients.getTranslationInZ();
-
-							float x_draw_mono_nn = ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[0]+ingredients.getTranslationInX();
-							float y_draw_mono_nn = ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[1]+ingredients.getTranslationInY();
-							float z_draw_mono_nn = ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[2]+ingredients.getTranslationInZ();
-
-
-
-							glBegin(GL_LINES);						// draw bond
-							glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());				// set the bond color
-							glVertex3f(x_draw_mono_orig, y_draw_mono_orig, z_draw_mono_orig);
-							glColor3f(ingredients.getMolecules()[neighboridx].getColor().getX(), ingredients.getMolecules()[neighboridx].getColor().getY(), ingredients.getMolecules()[neighboridx].getColor().getZ());				// set the bond color
-							glVertex3f(x_draw_mono_nn, y_draw_mono_nn, z_draw_mono_nn);
-							glEnd();
-																						}
+								glBegin(GL_LINES);						// draw bond
+								glColor3f(molecules[n].getColor().getX(), molecules[n].getColor().getY(), molecules[n].getColor().getZ());				// set the bond color
+								glVertex3f(x_draw_mono_orig, y_draw_mono_orig, z_draw_mono_orig);
+								glColor3f(ingredients.getMolecules()[neighboridx].getColor().getX(), ingredients.getMolecules()[neighboridx].getColor().getY(), ingredients.getMolecules()[neighboridx].getColor().getZ());				// set the bond color
+								glVertex3f(x_draw_mono_nn, y_draw_mono_nn, z_draw_mono_nn);
+								glEnd();
+							}
 						}
-
-
 					}
-
-			}
-
+				}
 			}
 		}
-
+	}
+	else
+	{ // nothing to do instead
 
 	}
-	else {}
-
-
 }
-
 
 #endif /* LEMONADE_VIEWER_OPENGL_H */

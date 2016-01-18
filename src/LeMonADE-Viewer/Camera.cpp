@@ -37,33 +37,29 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 Camera::Camera() {
   
   //Camera position
-  camXPos = 0.0f;
-  camYPos = 0.0f;
-  camZPos = 0.0f;
- 
-  //Camera rotation angles
-  camPhiRot = 0.0f;		// rotation in x-z-plane
-  camThetaRot = 0.0f;		// rotation perpendicular to x-z-plane
-  
-  //Axis for camera rotation with angle theta
-  camThetaRotAxisX = 1.0f;
-  camThetaRotAxisZ = 0.0f;
-  
+  CamPosition.setAllCoordinates(0.0f, 0.0f, 0.0f);
+
   //Linear Camera movement (left, right, up, down, in out)
-  camXSpeed = 0.0f;
-  camYSpeed = 0.0f;
-  camZSpeed = 0.0f;
+  CamSpeedMovement.setAllCoordinates(0.0f, 0.0f, 0.0f);
+
+  // the point we are looking to
+  CamCenter.setAllCoordinates(0.0f, 0.0f, 0.0f);
+
+  //Camera rotation angles
+  CamAngleYaw = 0.0f;  // rotation in x-z-plane
+  CamAnglePitch = 0.0f;  // rotation perpendicular to x-z-plane
   
-  camPhiRotSpeed= 0.0f;
-  camThetaRotSpeed= 0.0f;
+  
+  CamAngleYawSpeed = 0.0f;
+  CamAnglePitchSpeed= 0.0f;
 
   movementSpeedFactor = 1.0f;
   
   //Is a key pressed for linear camera movement?
-  holdingForwardI = false;	// key I = zoom in
-  holdingBackwardO = false;	// key O = zoom out
-  holdingUpW = false;		// key W = move up
-  holdingDownS = false;		// key S = move down
+  holdingForwardI = false;	// key I = move up
+  holdingBackwardO = false;	// key O = move down
+  holdingUpW = false;		// key W = move forward
+  holdingDownS = false;		// key S = move backward
   holdingLeftA = false;		// key A = move left
   holdingRightD = false;	// key D = move right
   
@@ -81,50 +77,54 @@ Camera::~Camera() {
 /****************************/
 //Get camera position
 
-GLfloat Camera::getCamXPos() const {
-  return camXPos;
+float Camera::getCamXPos() const {
+  return CamPosition.getX();
 }
 
-GLfloat Camera::getCamYPos() const {
-  return camYPos;
+float Camera::getCamYPos() const {
+  return CamPosition.getY();
 }
 
-GLfloat Camera::getCamZPos() const {
-  return camZPos;
+float Camera::getCamZPos() const {
+  return CamPosition.getZ();
 }
 
 //Get rotation angles
-GLfloat Camera::getCamPhiRot() const {
-  return camPhiRot;
+float Camera::getCamAngleYaw() const {
+  return CamAngleYaw;
 }
 
-GLfloat Camera::getCamThetaRot() const {
-  return camThetaRot;
+float Camera::getCamAnglePitch() const {
+  return CamAnglePitch;
 }
 
-//Get x- and z-component of the rotation axis for rotation angle theta 
-GLfloat Camera::getCamThetaRotAxisX() const {
-  return camThetaRotAxisX;
-}
-
-GLfloat Camera::getCamThetaRotAxisZ() const {
-  return camThetaRotAxisZ;
-}
 
 //Get linear camera movement
-GLfloat Camera::getCamXSpeed() const {
-  return camXSpeed;
+float Camera::getCamXSpeed() const {
+  return CamSpeedMovement.getX();
 }
 
-GLfloat Camera::getCamYSpeed() const {
-  return camYSpeed;
+float Camera::getCamYSpeed() const {
+  return CamSpeedMovement.getY();
 }
 
-GLfloat Camera::getCamZSpeed() const {
-  return camZSpeed;
+float Camera::getCamZSpeed() const {
+  return CamSpeedMovement.getZ();
 }
 
-GLfloat Camera::getMovementSpeedFactor() const {
+float Camera::getCamCenterXPos() const {
+  return CamCenter.getX();
+}
+
+float Camera::getCamCenterYPos() const {
+  return CamCenter.getY();
+}
+
+float Camera::getCamCenterZPos() const {
+  return CamCenter.getZ();
+}
+
+float Camera::getMovementSpeedFactor() const {
   return movementSpeedFactor;
 }
 
@@ -159,70 +159,76 @@ bool Camera::getHoldingMouseButtonLeft() const {
 }
 
 //Get the status for mouse-wheel-zooming
-GLfloat Camera::getHoldingForwardMouse() const {
+float Camera::getHoldingForwardMouse() const {
   return holdingForwardMouse;
 }
 
-GLfloat Camera::getHoldingBackwardMouse() const {
+float Camera::getHoldingBackwardMouse() const {
   return holdingBackwardMouse;
 }
 
 /****************************/
 //Set camera position
-void Camera::setCamXPos(GLfloat camXPosParam) {
-  this->camXPos = camXPosParam;
+void Camera::setCamXPos(float camXPos) {
+	CamPosition.setX(camXPos);
 }
 
-void Camera::setCamYPos(GLfloat camYPosParam) {
-  this->camYPos = camYPosParam;
+void Camera::setCamYPos(float camYPos) {
+	CamPosition.setY(camYPos);
 }
 
-void Camera::setCamZPos(GLfloat camZPosParam) {
-  this->camZPos = camZPosParam;
+void Camera::setCamZPos(float camZPos) {
+	CamPosition.setZ(camZPos);
 }
 
 
 //Set rotation angles
-void Camera::setCamPhiRot(GLfloat camPhiRotParam) {
-  this->camPhiRot = camPhiRotParam;
+void Camera::setCamAngleYaw(float camAngleYaw) {
+	CamAngleYaw = camAngleYaw;
 }
 
 //Set rotation angles
-void Camera::setCamPhiRotSpeed(GLfloat camPhiRotSpeedParam) {
-  this->camPhiRotSpeed = camPhiRotSpeedParam;
+void Camera::setCamAngleYawSpeed(float camAngleYawSpeed) {
+	CamAngleYawSpeed = camAngleYawSpeed;
 }
 
-void Camera::setCamThetaRot(GLfloat camThetaRotParam) {
-  this->camThetaRot = camThetaRotParam;
+void Camera::setCamAnglePitch(float camAnglePitch) {
+	CamAnglePitch = camAnglePitch;
 }
 
-void Camera::setCamThetaRotSpeed(GLfloat camThetaRotSpeedParam) {
-  this->camThetaRotSpeed = camThetaRotSpeedParam;
+void Camera::setCamAnglePitchSpeed(float camAnglePitchSpeed) {
+	CamAnglePitchSpeed = camAnglePitchSpeed;
 }
 
-//Set x- and z-component of the rotation axis for rotation angle theta 
-void Camera::setCamThetaRotAxisX(GLfloat camThetaRotAxisXParam) {
-  this->camThetaRotAxisX = camThetaRotAxisXParam;
+
+
+void Camera::setCamXSpeed(float camXSpeed) {
+  CamSpeedMovement.setX(camXSpeed);
 }
 
-void Camera::setCamThetaRotAxisZ(GLfloat camThetaRotAxisZParam) {
-  this->camThetaRotAxisZ = camThetaRotAxisZParam;
+void Camera::setCamYSpeed(float camYSpeed) {
+CamSpeedMovement.setY(camYSpeed);
 }
 
-void Camera::setCamXSpeed(GLfloat camXSpeedParam) {
-  this->camXSpeed = camXSpeedParam;
+void Camera::setCamZSpeed(float camZSpeed) {
+	CamSpeedMovement.setZ(camZSpeed);
 }
 
-//Get linear camera movement
-void Camera::setCamYSpeed(GLfloat camYSpeedParam) {
-  this->camYSpeed = camYSpeedParam;
+
+void Camera::setCamCenterXPos(float camCenterXPos) {
+	CamCenter.setX(camCenterXPos);
 }
 
-void Camera::setCamZSpeed(GLfloat camZSpeedParam) {
-  this->camZSpeed = camZSpeedParam;
+void Camera::setCamCenterYPos(float camCenterYPos) {
+	CamCenter.setY(camCenterYPos);
 }
 
-void Camera::setMovementSpeedFactor(GLfloat movementSpeedFactorParam) {
+void Camera::setCamCenterZPos(float camCenterZPos) {
+	CamCenter.setZ(camCenterZPos);
+}
+
+
+void Camera::setMovementSpeedFactor(float movementSpeedFactorParam) {
   this->movementSpeedFactor = movementSpeedFactorParam;
 }
 
@@ -256,11 +262,11 @@ void Camera::setHoldingMouseButtonLeft(bool holdingMouseButtonLeftParam) {
   this->holdingMouseButtonLeft = holdingMouseButtonLeftParam;
 }
 
-void Camera::setHoldingForwardMouse (GLfloat holdingForwardMouseParam) {
+void Camera::setHoldingForwardMouse (float holdingForwardMouseParam) {
   this->holdingForwardMouse = holdingForwardMouseParam;
 }
 
-void Camera::setHoldingBackwardMouse (GLfloat holdingBackwardMouseParam) {
+void Camera::setHoldingBackwardMouse (float holdingBackwardMouseParam) {
   this->holdingBackwardMouse = holdingBackwardMouseParam;
 }
 
@@ -311,9 +317,7 @@ void Camera::calculateCameraMovement() {
 
 
   //The absolute position difference/speed of the camera 
-  camXSpeed = camMovementXComponent;
-  camYSpeed = camMovementYComponent;
-  camZSpeed = camMovementZComponent;
+  CamSpeedMovement.setAllCoordinates(camMovementXComponent, camMovementYComponent, camMovementZComponent);
   
   //Set a maximum for the camera position difference/speed 
   /*if (camXSpeed > movementSpeedFactor) {
@@ -345,54 +349,45 @@ void Camera::calculateCameraMovement() {
 
 //Funktion to calculate the rotation angles and rotation axis for rotation with angle theta,
 //when the mouse button is pressed and the mouse is moved
-void Camera::handleMouseMove(int mouseX, int mouseY, GLint boxX, GLint boxY, GLint boxZ) {
-  GLfloat horizMouseSensitivity = 10.0f;
-  GLfloat vertMouseSensitivity = 10.0f;
+void Camera::handleMouseMove(int mouseX, int mouseY, int boxX, int boxY, int boxZ) {
+  float horizMouseSensitivity = 10.0f;
+  float vertMouseSensitivity = 10.0f;
   
   //movement angle phi in x-z-plane when mouse is moved horizontally
-  float phiMovement = (mouseX * 180.0f) / boxX; 
+  float phiMovement = (mouseX * 180.0f) / boxX; //yaw
   //movement angle theta perpendicular to x-z-plane when mouse is moved vertically
-  float thetaMovement = - (mouseY * 180.0f) / boxY; 
+  float thetaMovement = - (mouseY * 180.0f) / boxY; //pitch
   
-  camPhiRot += phiMovement / horizMouseSensitivity;
-  camThetaRot += thetaMovement / vertMouseSensitivity;
- 
-  camPhiRotSpeed = phiMovement / horizMouseSensitivity /5.f;
-  camThetaRotSpeed = thetaMovement / vertMouseSensitivity  /5.f;
 
 
-  float camPhiRads = toRads(camPhiRot);
-  float camThetaRads = toRads(camThetaRot);
-  
-  //Calculation of the rotation axis for angle theta
-  //This is needed to ensure that displayed simulation box is always rotated in the same direction when 
-  //the mouse is moved e.g. upwards
-  camThetaRotAxisX = cos(camPhiRads);
-  camThetaRotAxisZ = sin(camPhiRads);
-  
+  CamAngleYaw += phiMovement / horizMouseSensitivity;
+  CamAnglePitch += thetaMovement / vertMouseSensitivity;
+
+
+  CamAngleYawSpeed = phiMovement / horizMouseSensitivity /5.f;
+  CamAnglePitchSpeed = thetaMovement / vertMouseSensitivity  /5.f;
+
+
+  float camPhiRads = toRads(CamAngleYaw);
+  float camThetaRads = toRads(CamAnglePitch);
   
 }
 
 //Funktion to set the new camera position after a linear movement
 void Camera::moveCamera() {
-  camXPos += camXSpeed; 
-  camYPos += camYSpeed;
-  camZPos += camZSpeed;
-  
 
+	CamPosition += CamSpeedMovement;
+
+	CamPosition.setY( CamPosition.getY() -holdingForwardMouse);
+	CamPosition.setY( CamPosition.getY() +holdingBackwardMouse);
   
-  camYPos += -holdingForwardMouse;
-  camYPos += holdingBackwardMouse;
   
   holdingForwardMouse = 0.0f;
   holdingBackwardMouse = 0.0f;
   
-  camPhiRot += camPhiRotSpeed;
-  camThetaRot+= camThetaRotSpeed;
+  CamAngleYaw += CamAngleYawSpeed;
+  CamAnglePitch += CamAnglePitchSpeed;
 
-  float camPhiRads = toRads(camPhiRot);
-  camThetaRotAxisX = cos(camPhiRads);
-  camThetaRotAxisZ = sin(camPhiRads);
 
 
 }

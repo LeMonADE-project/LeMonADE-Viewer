@@ -21,7 +21,7 @@ For further details of LeMonADE-project see: [LeMonADE-project]
 * Install the LeMonADE library - see [LeMonADE-project] 
 * Clone the LeMonADE-Viewer application `git clone https://github.com/LeMonADE-project/LeMonADE-Viewer.git`
 * Install cmake (minimum version 2.6.2)
-* Install FLTK, SDL, and OpenGL (devel)
+* Install FLTK and OpenGL (devel)
 * Install POV-Ray for high resolution rendering 
 * Just do for standard compilation (program):
 

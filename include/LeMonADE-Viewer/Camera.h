@@ -31,32 +31,41 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef LEMONADE_VIEWER_CAMERA_H
 #define LEMONADE_VIEWER_CAMERA_H
 
-#include "SDL/SDL_opengl.h"
 #include <math.h>
 
+#include <LeMonADE/utility/Vector3D.h>
 
-
+/**
+ * @file
+ *
+ * @class Camera.h
+ *
+ * @brief Simplistic camera for handling all user-mouse-keyboard interactions.
+ *
+ *
+ **/
 class Camera {
   
 public:
   Camera();
   virtual ~Camera();
   
-  GLfloat getCamXPos() const;
-  GLfloat getCamYPos() const;
-  GLfloat getCamZPos() const;
+  float getCamXPos() const;
+  float getCamYPos() const;
+  float getCamZPos() const;
   
-  GLfloat getCamPhiRot() const;
-  GLfloat getCamThetaRot() const;
+  float getCamAngleYaw() const;
+  float getCamAnglePitch() const;
   
-  GLfloat getCamThetaRotAxisX() const;
-  GLfloat getCamThetaRotAxisZ() const;
- 
-  GLfloat getCamXSpeed() const;
-  GLfloat getCamYSpeed() const;
-  GLfloat getCamZSpeed() const;
+  float getCamCenterXPos() const;
+  float getCamCenterYPos() const;
+  float getCamCenterZPos() const;
+
+  float getCamXSpeed() const;
+  float getCamYSpeed() const;
+  float getCamZSpeed() const;
   
-  GLfloat getMovementSpeedFactor() const;
+  float getMovementSpeedFactor() const;
   
   bool getHoldingForwardI() const;
   bool getHoldingBackwardO() const;
@@ -67,29 +76,28 @@ public:
   
   bool getHoldingMouseButtonLeft() const;
   
-  GLfloat getHoldingForwardMouse () const;
-  GLfloat getHoldingBackwardMouse () const;
+  float getHoldingForwardMouse () const;
+  float getHoldingBackwardMouse () const;
   
-  
-  
-  void setCamXPos(GLfloat camXPosParam = 0.0f);
-  void setCamYPos(GLfloat camYPosParam = 0.0f);
-  void setCamZPos(GLfloat camZPosParam = 0.0f);
+  void setCamXPos(float camXPos = 0.0f);
+  void setCamYPos(float camYPos = 0.0f);
+  void setCamZPos(float camZPos = 0.0f);
 
-  void setCamPhiRot(GLfloat camPhiRotParam = 0.0f);
-  void setCamThetaRot(GLfloat camThetaRotParam = 0.0f);
-  
-  void setCamPhiRotSpeed(GLfloat camPhiRotSpeedParam = 0.0f);
-  void setCamThetaRotSpeed(GLfloat camThetaRotSpeedParam = 0.0f);
+  void setCamCenterXPos(float camCenterXPos = 0.0f);
+  void setCamCenterYPos(float camCenterYPos = 0.0f);
+  void setCamCenterZPos(float camCenterZPos = 0.0f);
 
-  void setCamThetaRotAxisX(GLfloat camThetaRotAxisXParam = 1.0f);
-  void setCamThetaRotAxisZ(GLfloat camThetaRotAxisZParam = 0.0f);
+  void setCamAngleYaw(float camAngleYaw = 0.0f);
+  void setCamAnglePitch(float camAnglePitch = 0.0f);
   
-  void setCamXSpeed(GLfloat camXSpeedParam = 0.0f);
-  void setCamYSpeed(GLfloat camYSpeedParam = 0.0f);
-  void setCamZSpeed(GLfloat camZSpeedParam = 0.0f);
+  void setCamAngleYawSpeed(float camAngleYawSpeed = 0.0f);
+  void setCamAnglePitchSpeed(float camCamAnglePitchSpeed = 0.0f);
+
+  void setCamXSpeed(float camXSpeedParam = 0.0f);
+  void setCamYSpeed(float camYSpeedParam = 0.0f);
+  void setCamZSpeed(float camZSpeedParam = 0.0f);
   
-  void setMovementSpeedFactor(GLfloat movementSpeedFactorParam = 1.0f);
+  void setMovementSpeedFactor(float movementSpeedFactorParam = 1.0f);
   
   void setHoldingForwardI(bool holdingForwardIParam = false);
   void setHoldingBackwardO(bool holdingBackwardOParam = false);
@@ -100,35 +108,30 @@ public:
   
   void setHoldingMouseButtonLeft(bool holdingMouseButtonLeftParam = false);
   
-  void setHoldingForwardMouse(GLfloat holdingForwardMouseParam = 0.0f);
-  void setHoldingBackwardMouse(GLfloat holdingBackwardMouseParam = 0.0f);
+  void setHoldingForwardMouse(float holdingForwardMouseParam = 0.0f);
+  void setHoldingBackwardMouse(float holdingBackwardMouseParam = 0.0f);
   
   void calculateCameraMovement();
   void moveCamera();
-  void handleMouseMove(int, int, GLint, GLint, GLint);
+  void handleMouseMove(int, int, int, int, int);
   
   float toRads(const float);
-  
+
 private:
   
-  GLfloat camXPos;
-  GLfloat camYPos;
-  GLfloat camZPos;
+  VectorFloat3 CamPosition;
+  VectorFloat3 CamSpeedMovement;
   
-  GLfloat camPhiRot;
-  GLfloat camThetaRot;
-  
-  GLfloat camThetaRotAxisX;
-  GLfloat camThetaRotAxisZ;
+  VectorFloat3 CamCenter;
 
-  GLfloat camXSpeed;
-  GLfloat camYSpeed;
-  GLfloat camZSpeed;
-  
-  GLfloat camPhiRotSpeed;
-  GLfloat camThetaRotSpeed;
+  float CamAngleYaw;
+  float CamAngleYawSpeed;
 
-  GLfloat movementSpeedFactor;		
+  float CamAnglePitch;
+  float CamAnglePitchSpeed;
+  
+
+  float movementSpeedFactor;
   
   bool holdingForwardI;
   bool holdingBackwardO;
@@ -139,8 +142,8 @@ private:
   
   bool holdingMouseButtonLeft;
   
-  GLfloat holdingForwardMouse;
-  GLfloat holdingBackwardMouse;
+  float holdingForwardMouse;
+  float holdingBackwardMouse;
   
   
 };

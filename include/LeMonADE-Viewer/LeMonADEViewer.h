@@ -78,582 +78,559 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 #include <FL/Fl_Color_Chooser.H>
 
 
-template <class IngredientsType> class LeMonADEViewer: public AbstractUpdater
+/**
+ * @file
+ *
+ * @class LeMonADEViewer
+ *
+ * @brief Main class for handling the menu, and delegation of all user commands.
+ *
+ *
+ **/
+template <class IngredientsType>
+class LeMonADEViewer: public AbstractUpdater
 {
 public:
-  // constructor
- LeMonADEViewer(IngredientsType& _ingredients, std::string  filename):ingredients(_ingredients), ReadBfmFile(filename,_ingredients,UpdaterReadBfmFile<IngredientsType>::READ_STEPWISE){
 
-	 delayTimeFrames=0.25;
+	// constructor
+	LeMonADEViewer(IngredientsType& _ingredients, std::string  filename):ingredients(_ingredients), ReadBfmFile(filename,_ingredients,UpdaterReadBfmFile<IngredientsType>::READ_STEPWISE)
+	{
+		delayTimeFrames=0.25;
 
-	 smoothNumber = 0;
-	 FrameNumber = 0;
+		smoothNumber = 0;
+		FrameNumber = 0;
 
-	 std::string fn=filename;
-	 fn.erase (fn.length()-4, fn.length());
+		// construct the cropped filename without path and file ending
+		std::string fn=filename;
+		fn.erase (fn.length()-4, fn.length());
+		unsigned found = fn.find_last_of("/\\");
+		cropFilename=fn.substr(found+1);
+		std::cout << "cropped filename: " << cropFilename << std::endl;
 
-	 	unsigned found = fn.find_last_of("/\\");
-	 	size_t str_length = fn.length();
-	 	std::cout << " file: " << fn.substr(found+1) << '\n' << found << " - " << str_length << " " << fn.substr(found+1, str_length) << std::endl;
-	 	cropFilename=fn.substr(found+1);
+	};
 
+	virtual ~LeMonADEViewer(){
+		delete winAbout;
+		delete winOpenGL;
+		delete window;
+	};
 
-	 //cropFilename = filename.substr(0,filename.length()-4);
-	 std::cout << "cropped filename: " << cropFilename << std::endl;
- };
-
- virtual ~LeMonADEViewer(){
- 		delete winAbout;
- 		delete winOpenGL;
- 		delete window;
- 	};
-
-
-private: Fl_Double_Window* window;
-		 LeMonADEOpenGL<IngredientsType>* winOpenGL;
-		 LeMonADEViewerAboutWin* winAbout;
-
-		 Fl_Button* B_ReverseWindingStart;
-		 Fl_Button* B_ReverseWinding;
-		 Fl_Light_Button* B_Play;
-		 Fl_Button* B_ForwardWinding;
-		 Fl_Button* B_ForwardWindingEnd;
-
-		 Fl_Check_Button* CB_ShowBonds;
-		 Fl_Check_Button* CB_FoldBack;
-		 Fl_Check_Button* CB_Smooth;
-		 Fl_Spinner* CB_SmoothSpinner;
-
-		 Fl_Counter* C_MonomerSize;
-		 Fl_Counter* C_BondWidth;
-		 Fl_Counter* C_DelayFrames;
-
-		 Fl_Spinner* S_TranslateDXSpinner;
-		 Fl_Spinner* S_TranslateDYSpinner;
-		 Fl_Spinner* S_TranslateDZSpinner;
-
-		 Fl_Check_Button* CB_DrawSpheres;
-		 Fl_Spinner* S_DrawSpheresSubdivisionSpinner;
-
-		 Fl_Choice* Ch_PropertySchemeChoice;
-		 Fl_Choice* Ch_PropertyValueChoice;
-		 Fl_Choice* Ch_PropertyColorChoice;
-
-		 Fl_Text_Buffer *T_TextBuffer;
-		 Fl_Text_Display *T_TextDisplay;
-
-		 Fl_Input* I_CommandInput;
-
-
-		 Fl_Output* O_FrameMax;
-		 Fl_Int_Input* I_FrameInput;
-
-		 IngredientsType& ingredients;
-
-		 UpdaterReadBfmFile<IngredientsType> ReadBfmFile;
-
-
-		 double delayTimeFrames;
-
-
-		 float smoothNumber;
-		 int FrameNumber;
-
-		 LineParser CommandLineParser;
-
-		 //find linear strands and put them in groups
-		 typedef vector < MonomerGroup<typename IngredientsType::molecules_type> > MonomerGroupVector;
-
-		 std::map<std::string, LineCommandBase<IngredientsType, MonomerGroupVector>* > CommandLineMap;
-		// std::map<std::string, LineCommandBase* > CommandLineMap;
-
-
-		  MonomerGroupVector linearGroupsVector;
-
-		  std::string cropFilename;
-public:
-
-
-  
- void initialize(){
-
-	 cout <<"initialize ReadIn-BFM" << endl;
-	 ReadBfmFile.initialize();
-	 //ReadBfmFile.execute();
-
-	    cout <<"initialize FLTK"  << endl;
-
-	    window = new Fl_Double_Window(25,25,300, 585+35, "LeMonADE-ViewerMain");
-	     {
-	       { Fl_Group* o = new Fl_Group(10, 15, 285, 50);
-	         { B_ReverseWindingStart = new Fl_Button(10, 22, 30, 30, "@|<");
-	         	 B_ReverseWindingStart->tooltip("Show the first frame");
-	           B_ReverseWindingStart->labelsize(22);
-	           B_ReverseWindingStart->when(FL_WHEN_CHANGED);
-	           B_ReverseWindingStart->callback(( Fl_Callback*)cb_changeReverseWindingStart, this );
-	         } // Fl_Button* o
-	         { B_ReverseWinding = new Fl_Button(45, 22, 30, 30, "@<<");
-	           B_ReverseWinding->tooltip("Show the frame before");
-	          B_ReverseWinding->labelsize(22);
-	        B_ReverseWinding->when(FL_WHEN_CHANGED);
-	        B_ReverseWinding->callback(( Fl_Callback*)cb_changeReverseWinding, this );
-
-	         } // Fl_Button* o
-	         { B_Play = new Fl_Light_Button(80, 22, 30, 30, "@||");
-	           //Fl_Button* o = new Fl_Button(105, 22, 30, 30, "@square @circle");
-	           B_Play->tooltip("Play all Frames.");
-	           B_Play->labelsize(12);
-	           B_Play->when(FL_WHEN_CHANGED);
-	           B_Play->callback(( Fl_Callback*)cb_changePlay, this );
-	         } // Fl_Button* o
-	         { B_ForwardWinding = new Fl_Button(115, 22, 30, 30, "@>>");
-	           B_ForwardWinding->tooltip("Show the next Frame.");
-	         	B_ForwardWinding->labelsize(22);
-
-	         	B_ForwardWinding->when(FL_WHEN_CHANGED);
-	         	B_ForwardWinding->callback(( Fl_Callback*)cb_changeForwardWinding, this );
-	         } // Fl_Button* o
-	         { B_ForwardWindingEnd = new Fl_Button(150, 22, 30, 30, "@>|");
-	           B_ForwardWindingEnd->tooltip("Show the last frame");
-	           B_ForwardWindingEnd->labelsize(22);
-	           B_ForwardWindingEnd->when(FL_WHEN_CHANGED);
-	           B_ForwardWindingEnd->callback(( Fl_Callback*)cb_changeForwardWindingEnd, this );
-	         } // Fl_Button* o
-	         { Fl_Button* o = new Fl_Button(195, 22, 30, 30, "P");
-	           o->tooltip("Generates POV-Ray-script");
-		       o->labelfont(FL_BOLD+FL_ITALIC);
-		       o->labelsize(22);
-		       o->callback(( Fl_Callback*)cb_povray, this );
-	         } // Fl_Button* o
-	         { Fl_Button* o = new Fl_Button(230, 22, 30, 30, "C");
-	         	           o->tooltip("ColorChooser");
-	         	           o->labelfont(FL_BOLD+FL_ITALIC);
-	         	           o->labelsize(22);
-	         	           o->callback(( Fl_Callback*)cb_colorchooser, this );
-	         	         } // Fl_Button* o
-	         { Fl_Button* o = new Fl_Button(265, 22, 30, 30, "i");
-	           o->tooltip("License Information");
-	           o->labelfont(FL_BOLD+FL_ITALIC);
-	           o->labelsize(22);
-	           o->callback(( Fl_Callback*)cb_license, this );
-	           /* @todo add license information window*/
-	         } // Fl_Button* o
-
-
-	         o->end();
-	       } // Fl_Group* o
-
-	       {
-	    	  CB_FoldBack = new Fl_Check_Button(25, 75, 70, 15, "folding back");
-	       CB_FoldBack->down_box(FL_DOWN_BOX);
-	       CB_FoldBack->labelsize(22);
-	       CB_FoldBack->clear();
-	       	CB_FoldBack->when(FL_WHEN_CHANGED);
-	        CB_FoldBack->callback(( Fl_Callback*)cb_foldback, this );
-	       } // Fl_Check_Button* o
-	       {
-	       CB_ShowBonds = new Fl_Check_Button(25, 105, 70, 15, "show bonds");
-	       CB_ShowBonds->down_box(FL_DOWN_BOX);
-	       CB_ShowBonds->labelsize(22);
-	       CB_ShowBonds->set();
-	       CB_ShowBonds->when(FL_WHEN_CHANGED);
-	       CB_ShowBonds->callback(( Fl_Callback*)cb_showbonds, this );
-
-	       } // Fl_Check_Button* o
-	       { CB_Smooth = new Fl_Check_Button(25, 135, 70, 15, "smooth");
-	       CB_Smooth->tooltip("smoothing the coordinates (CPU-intensive)");
-	       CB_Smooth->down_box(FL_DOWN_BOX);
-	       CB_Smooth->labelsize(22);
-	       CB_Smooth->when(FL_WHEN_CHANGED);
-	       CB_Smooth->callback(( Fl_Callback*)cb_smoothing, this );
-	           } // Fl_Check_Button* o
-
-	       { CB_SmoothSpinner = new Fl_Spinner(246, 130, 40, 24, "using");
-	       CB_SmoothSpinner->tooltip("smoothing using frames");
-	       CB_SmoothSpinner->labelsize(22);
-	       CB_SmoothSpinner->maximum(128);
-	       CB_SmoothSpinner->value(2);
-	       CB_SmoothSpinner->when(FL_WHEN_CHANGED);
-	       CB_SmoothSpinner->callback(( Fl_Callback*)cb_smoothingSpinner, this );
-	           } // Fl_Spinner* o
-	       { C_MonomerSize = new Fl_Counter(25, 165, 141, 35, "monomer size");
-	       C_MonomerSize->tooltip("change the monomer size");
-	       C_MonomerSize->labelsize(18);
-	       C_MonomerSize->minimum(0.1);
-	       C_MonomerSize->maximum(5.0);
-	       C_MonomerSize->step(0.05);
-	       C_MonomerSize->value(1.0);
-	       C_MonomerSize->textsize(18);
-	       C_MonomerSize->align(Fl_Align(FL_ALIGN_RIGHT));
-	       C_MonomerSize->callback(( Fl_Callback*)cb_changeMonomerSize, this );
-	           } // Fl_Counter* o
-	       { C_BondWidth = new Fl_Counter(25, 205, 141, 35, "bond width");
-	       C_BondWidth->tooltip("change the bond width");
-	       C_BondWidth->labelsize(18);
-	       C_BondWidth->minimum(0.1);
-	       C_BondWidth->maximum(20);
-	       C_BondWidth->value(0.3);
-	       C_BondWidth->textsize(18);
-	       C_BondWidth->align(Fl_Align(FL_ALIGN_RIGHT));
-	       C_BondWidth->callback(( Fl_Callback*)cb_changeBondWidth, this );
-	          } // Fl_Counter* o
-	       { C_DelayFrames = new Fl_Counter(25, 245, 141, 35, "delay frame");
-	       C_DelayFrames->tooltip("the time between showing the frames");
-	       C_DelayFrames->labelsize(18);
-	       C_DelayFrames->minimum(0.01);
-	       C_DelayFrames->maximum(2);
-	       C_DelayFrames->step(0.05);
-	       C_DelayFrames->value(0.25);
-	       C_DelayFrames->textsize(18);
-	       C_DelayFrames->align(Fl_Align(FL_ALIGN_RIGHT));
-	       C_DelayFrames->callback(( Fl_Callback*)cb_changeDelayFrames, this );
-	          } // Fl_Counter* o
-	       { S_TranslateDXSpinner = new Fl_Spinner(55, 285, 60, 30, "dX:");
-	       	       S_TranslateDXSpinner->minimum(-1000);
-	       	       S_TranslateDXSpinner->maximum(1000);
-	       	       S_TranslateDXSpinner->value(0);
-	       	    S_TranslateDXSpinner->tooltip("visual translation in X");
-
-	       	 S_TranslateDXSpinner->when(FL_WHEN_CHANGED);
-	       	S_TranslateDXSpinner->callback(( Fl_Callback*)s_translateDXSpinner, this );
-	       	           } // Fl_Spinner* o
-	       	           {S_TranslateDYSpinner = new Fl_Spinner(145, 285, 60, 30, "dY:");
-	       	           S_TranslateDYSpinner->minimum(-1000);
-	       	           S_TranslateDYSpinner->maximum(1000);
-	       	           S_TranslateDYSpinner->value(0);
-	       	        S_TranslateDYSpinner->tooltip("visual translation in Y");
-
-	       	        	       	 S_TranslateDYSpinner->when(FL_WHEN_CHANGED);
-	       	        	       	S_TranslateDYSpinner->callback(( Fl_Callback*)s_translateDYSpinner, this );
-	       	           } // Fl_Spinner* o
-	       	           { S_TranslateDZSpinner = new Fl_Spinner(235, 285, 60, 30, "dZ:");
-	       	           S_TranslateDZSpinner->minimum(-1000);
-	       	           S_TranslateDZSpinner->maximum(1000);
-	       	           S_TranslateDZSpinner->value(0);
-	       	        S_TranslateDZSpinner->tooltip("visual translation in Z");
-
-	       	        	       	 S_TranslateDZSpinner->when(FL_WHEN_CHANGED);
-	       	        	       	S_TranslateDZSpinner->callback(( Fl_Callback*)s_translateDZSpinner, this );
-	       	           } // Fl_Spinner* o
-	       	        { CB_DrawSpheres = new Fl_Check_Button(30, 325, 70, 15, "draw spheres");
-	       	     CB_DrawSpheres->down_box(FL_DOWN_BOX);
-	       	  CB_DrawSpheres->tooltip("enables/disables GPU-intensive rendering as spheres");
-	       	  CB_DrawSpheres->callback(( Fl_Callback*)cb_drawSpheres, this );
-
-	       	            } // Fl_Check_Button* o
-	       	            { S_DrawSpheresSubdivisionSpinner = new Fl_Spinner(254, 321, 40, 24, "subdivision:");
-	       	              S_DrawSpheresSubdivisionSpinner->maximum(15);
-	       	           S_DrawSpheresSubdivisionSpinner->minimum(1);
-	       	           S_DrawSpheresSubdivisionSpinner->value(4);
-	       	        S_DrawSpheresSubdivisionSpinner->tooltip("number of subdivision of sphere");
-	       	           S_DrawSpheresSubdivisionSpinner->callback(( Fl_Callback*)s_subdivision, this );
-	       	            } // Fl_Spinner* o
-
-
-
-	       	         { Ch_PropertySchemeChoice = new Fl_Choice(25, 350, 105, 35);
-	       	      Ch_PropertySchemeChoice->down_box(FL_BORDER_BOX);
-	       	   //Ch_PropertyChoice->labelsize(12);
-	       	//Ch_PropertyChoice->textsize(11);
-	       	           //o->callback((Fl_Callback*)cb_collapseicons_chooser);
-
-	       	      // @todo add coloring for other schemes
-	       	//Ch_PropertySchemeChoice->add("NONE");
-	       	Ch_PropertySchemeChoice->add("ColorAtt");
-	       	//Ch_PropertySchemeChoice->add("ColorLinks");
-	    	//Ch_PropertySchemeChoice->add("ColorGroup");
-	       	Ch_PropertySchemeChoice->value(0);
-	       	//Ch_PropertyChoice->menu(menu_collapseicons_chooser);
-	       	            } // Fl_Choice* o
-
-	       	      {
-	       	    	  //dirty work-around to get all attributes in ingredients
-
-	       	    	std::set<int> myset;
-
-	       	    	for(uint32_t i = 0; i < ingredients.getMolecules().size(); i++)
-	       	    		myset.insert(ingredients.getMolecules()[i].getAttributeTag());
-
-	       	    	//myset.sort();
-
-	       	    	std::cout<< "num different attributes: " << myset.size()<< std::endl;
-
-	       	    	  Ch_PropertyValueChoice = new Fl_Choice(25+105, 350, 85, 35);
-	       	      	       	      Ch_PropertyValueChoice->down_box(FL_BORDER_BOX);
-
-	       	      	       	   //Ch_PropertyChoice->labelsize(12);
-	       	      	       	//Ch_PropertyChoice->textsize(11);
-	       	      	       	           //o->callback((Fl_Callback*)cb_collapseicons_chooser);
-	       	      	       	Ch_PropertyValueChoice->add("NONE");
-
-	       	      	       	//add the other attributes
-	       	      	   for (std::set<int>::iterator it=myset.begin(); it!=myset.end(); ++it)
-	       	      	       {
-
-	       	      		   	   std::stringstream ss;
-	       	      		   	   ss << *it;
-	       	      		   	   Ch_PropertyValueChoice->add((ss.str()).c_str());
-	       	      		   	   std::cout << ' ' << *it;
-	       	      	       }
-
-
-
-	       	      	       	Ch_PropertyValueChoice->value(0);
-	       	      	       	//Ch_PropertyChoice->menu(menu_collapseicons_chooser);
-	       	      	       	            } // Fl_Choice* o
-
-	       	   { Ch_PropertyColorChoice = new Fl_Choice(25+105+85, 350, 85, 35);
-	       	   	       	      	       	      Ch_PropertyColorChoice->down_box(FL_BORDER_BOX);
-	       	   	       	      	   Ch_PropertyColorChoice->when(FL_WHEN_RELEASE|FL_WHEN_NOT_CHANGED);
-	       	   	       	      	       	   //Ch_PropertyChoice->labelsize(12);
-	       	   	       	      	       	//Ch_PropertyChoice->textsize(11);
-	       	   	       	      	   Ch_PropertyColorChoice->callback((Fl_Callback*)ch_propertycolorchooser, this);
-	       	   	       	      	       	Ch_PropertyColorChoice->add("NONE");
-	       	   	       	      	       	Ch_PropertyColorChoice->add("White");
-	       	   	       	      	       	Ch_PropertyColorChoice->add("Black");
-	       	   	       	      	       	Ch_PropertyColorChoice->add("Red");
-	       	   	       	      	       	Ch_PropertyColorChoice->add("Green");
-	       	   	       	      	       	Ch_PropertyColorChoice->add("Blue");
-	       	   	       	      	       	Ch_PropertyColorChoice->add("Yellow");
-	       	   	       	      	       	Ch_PropertyColorChoice->add("Magenta");
-	       	   	       	      	       	Ch_PropertyColorChoice->add("Cyan");
-	       	   	       	      	Ch_PropertyColorChoice->add("Orange");
-
-	       	   	       	      	       	Ch_PropertyColorChoice->value(0);
-
-	       	   	       	      	       	Fl_Menu_Item* array = const_cast<Fl_Menu_Item*>( Ch_PropertyColorChoice->menu() );
-
-	       	   	       	      	       	// Change color of added item to Red
-	       	   	       	      	//array[ 0 ].labelcolor (FL_NONE);
-	       	   	       	      	//array[ 1 ].labelcolor (FL_WHITE);
-	       	   	       	      	array[ 2 ].labelcolor (FL_BLACK);
-	       	   	       	array[ 3 ].labelcolor (FL_RED);
-	       	   		array[ 4 ].labelcolor (FL_GREEN);
-	       	   	array[ 5 ].labelcolor (FL_BLUE);
-	       	 array[ 6 ].labelcolor (FL_YELLOW);
-	       	array[ 7 ].labelcolor (FL_MAGENTA);
-	    	array[ 8 ].labelcolor (FL_CYAN);
-	    	array[ 9 ].labelcolor (fl_rgb_color(255,160,32));
-
-
-	       	   	       	      	for ( int t=0; t<Ch_PropertyColorChoice->menu()->size(); t++ ) {                // walk array of items
-	       	   	     //  	   Fl_Menu_Item *item;
-	       	   	     //item = (Fl_Menu_Item*)Ch_PropertyColorChoice->menu()[t];
-	       	 //  	Ch_PropertyColorChoice->menu()[t].labelcolor(FL_RED);
-	       	   	       	      		//const  Fl_Menu_Item &item = Ch_PropertyColorChoice->menu()[t];       // get each item
-	       	   	       	  // item->labelcolor(FL_RED);
-	       	   	       	      	   // fprintf(stderr, "item #%d -- label=%s, value=%s type=%s\n",
-	       	   	       	      	   //     t,
-	       	   	       	      	   //     item.label() ? item.label() : "(Null)",          // menu terminators have NULL labels
-	       	   	       	      	   //     (item.flags & FL_MENU_VALUE) ? "set" : "clear",  // value of toggle or radio items
-	       	   	       	      	   //     (item.flags & FL_SUBMENU) ? "Submenu" : "Item"); // see if item is a submenu or actual item
-	       	   	       	      	}
-
-	       	   	       	      	       	//Ch_PropertyChoice->menu(menu_collapseicons_chooser);
-	       	   	       	      	       	            } // Fl_Choice* o
-
-
-
-	       { T_TextBuffer = new Fl_Text_Buffer();
-	         T_TextDisplay = new Fl_Text_Display(25, 355+35, 250, 110);
-	         T_TextDisplay->buffer(T_TextBuffer);
-	         T_TextDisplay->wrap_mode( Fl_Text_Display::WRAP_AT_BOUNDS,0);
-
-	           } // Fl_Text_Display* o
-	       { I_CommandInput = new Fl_Input(25, 492+35, 250, 43, "command:");
-	       	   I_CommandInput->align(Fl_Align(FL_ALIGN_TOP));
-
-
-	       	I_CommandInput->tooltip("\
-!setColor:idxMono1-idxMono2=(red,green,blue)\n\
-!setColor:all=(red,green,blue)\n\
-!setColorAttributes:att=(red,green,blue)\n\
-!setColorLinks:numLinks=(red,green,blue)\n\
-!setColorVisibility:vis=(red,green,blue)\n\
-!setColorGroups:idxGroup=(red,green,blue)\n\
-!setColorGroupsRandom\n\
-!setVisible:idxMono1-idxMono2=vis\n\
-!setVisible:all=vis\n\
-!setVisibleAttributes:att=vis\n\
-!setVisibleLinks:numLinks=vis\n\
-!setVisibleGroups:idxG1-idxG2=vis\n\
-!setRadius:idxMono1-idxMono2=radius\n\
-!setRadius:all=radius\n\
-!setRadiusAttributes:att=radius\n\
-!setRadiusLinks:numLinks=radius\n\
-!setRadiusGroups:idxGroup=radius\n");
-
-
-	       	I_CommandInput->when(FL_WHEN_ENTER_KEY|FL_WHEN_NOT_CHANGED);
-				I_CommandInput->callback(( Fl_Callback*)cb_changeCommandInput, this );
-	       } // Fl_Input* o
-
-	       {
-	    	   I_FrameInput = new Fl_Int_Input(85, 540+35, 90, 24, "Frame");
-	    	   I_FrameInput->labelsize(18);
-
-	    	   std::stringstream sd("");
-	    	   	    	   sd << "1";
-
-	    	   I_FrameInput->value(sd.str().c_str());
-
-	    	   I_FrameInput->tooltip("set the frame to read");
-	    	   I_FrameInput->when(FL_WHEN_ENTER_KEY);
-	    	   I_FrameInput->callback(( Fl_Callback*)cb_changeFrameInput, this );
-	       }
-	       {
-	    	   std::stringstream sd("");
-	    	   sd << ReadBfmFile.getNumFrames();
-
-	    	   std::cout<<sd.str() << std::endl;
-
-	    	   O_FrameMax = new Fl_Output(185, 540+35, 90, 24, "/");
-	    	   O_FrameMax->labelsize(18);
-	    	   O_FrameMax->value(sd.str().c_str());
-	           }
-	       window->end();
-	       window->resizable(window);
-	     } // Fl_Double_Window* o
-
-
-	     //fill the groups with connected structures
-	     //linearStrandsVector.setName("linearStrands");
-	     //fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>(&(this->ingredients.getMolecules())),alwaysTrue() );
-	     fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>(&(this->ingredients.getMolecules())),belongsToLinearStrand() );
-
-
-
-	     winOpenGL= new LeMonADEOpenGL<IngredientsType>(ingredients, linearGroupsVector, 400,25,800,800, "LeMonADeViewerOpenGL");
-	     winOpenGL->resizable(winOpenGL);
-
-	     window->show();
-	     winOpenGL->show();
-
-
-	     winOpenGL->initialize();
-
-
-	     winAbout = new LeMonADEViewerAboutWin(600,600,"About LeMonADE-Viewer");
-
-
-	 /*    std::string a = std::string("!setColor");
-	     CommandSetColor<IngredientsType>* f = new CommandSetColor<IngredientsType>();
-
-	     std::stringstream sd;
-	     sd.str(a);
-
-	     f->executeLineCommand(ingredients, sd);
-*/
-	     //CommandLineMap.insert ( std::pair<std::string, LineCommandBase<IngredientsType> >(std::string("!setColor"), new CommandSetColor<IngredientsType>()) );
-	     CommandLineMap["!setColor"] = new CommandSetColor<IngredientsType, MonomerGroupVector>();//.insert ( std::pair<std::string, LineCommandBase<IngredientsType>* >(a, &f) );
-	     CommandLineMap["!setColorAttributes"] = new CommandSetColorAttributes<IngredientsType, MonomerGroupVector>();//.insert ( std::pair<std::string, LineCommandBase<IngredientsType>* >(a, &f) );
-	     CommandLineMap["!setColorLinks"] = new CommandSetColorLinks<IngredientsType, MonomerGroupVector>();//.insert ( std::pair<std::string, LineCommandBase<IngredientsType>* >(a, &f) );
-
-	     CommandLineMap["!setVisibleAttributes"] = new CommandSetVisibleAttributes<IngredientsType, MonomerGroupVector>();//.insert ( std::pair<std::string, LineCommandBase<IngredientsType>* >(a, &f) );
-	     CommandLineMap["!setVisibleLinks"] = new CommandSetVisibleLinks<IngredientsType, MonomerGroupVector>();
-	     CommandLineMap["!setVisible"] = new CommandSetVisible<IngredientsType, MonomerGroupVector>();//.insert ( std::pair<std::string, LineCommandBase<IngredientsType>* >(a, &f) );
-	     CommandLineMap["!setVisibleGroups"] = new CommandSetVisibleGroups<IngredientsType, MonomerGroupVector>();
-
-	     CommandLineMap["!setColorVisibility"] = new CommandSetColorVisibility<IngredientsType, MonomerGroupVector>();//.insert ( std::pair<std::string, LineCommandBase<IngredientsType>* >(a, &f) );
-	     CommandLineMap["!setColorGroups"] = new CommandSetColorGroups<IngredientsType, MonomerGroupVector>();
-	     CommandLineMap["!setColorGroupsRandom"] = new CommandSetColorGroupsRandom<IngredientsType, MonomerGroupVector>();
-
-	     CommandLineMap["!setRadius"] = new CommandSetRadius<IngredientsType, MonomerGroupVector>();//.insert ( std::pair<std::string, LineCommandBase<IngredientsType>* >(a, &f) );
-	     CommandLineMap["!setRadiusAttributes"] = new CommandSetRadiusAttributes<IngredientsType, MonomerGroupVector>();//.insert ( std::pair<std::string, LineCommandBase<IngredientsType>* >(a, &f) );
-	     CommandLineMap["!setRadiusLinks"] = new CommandSetRadiusLinks<IngredientsType, MonomerGroupVector>();//.insert ( std::pair<std::string, LineCommandBase<IngredientsType>* >(a, &f) );
-	     CommandLineMap["!setRadiusGroups"] = new CommandSetRadiusGroups<IngredientsType, MonomerGroupVector>();//.insert ( std::pair<std::string, LineCommandBase<IngredientsType>* >(a, &f) );
-
-	     CommandLineMap["!help"] = new CommandGetHelp<IngredientsType, MonomerGroupVector>();
-
-	     /*for(int i = 0; i < 100; i++)
-	     ingredients.modifyMolecules()[i].setVisible(false);
-	     */
-
-
-	     std::stringstream startMessage;
-	     startMessage << "box (" << ingredients.getBoxX() << ", " << ingredients.getBoxY() << "," << ingredients.getBoxZ() <<")" << std::endl;
-	     startMessage << "periodic (" << (ingredients.isPeriodicX()?"true":"false") << ", " << (ingredients.isPeriodicY()?"true":"false") << "," << (ingredients.isPeriodicZ()?"true":"false") <<")" << std::endl;
-	     startMessage << "number monomers = " << ingredients.getMolecules().size()<< std::endl;
-	     startMessage << "number groups = " << linearGroupsVector.size()<< std::endl;
-	     startMessage << "type \"!help\" for all commands " << std::endl;
-
-	     T_TextBuffer->append(startMessage.str().c_str());
-
-
-	     I_CommandInput->value("!help");
-
-
-
- }
-
- static void Timer_CB(void *userdata) {
-	 LeMonADEViewer<IngredientsType> *o = (LeMonADEViewer<IngredientsType>*)userdata;
-
-         if(!o->ReadBfmFile.execute())
-         {
-        	 Fl::remove_timeout(Timer_CB);
-        	 o->B_Play->clear();
-        	 o->B_Play->label("@||");
-        	 o->generalPlayFunction();
-         }
-         else
-         {
-         Fl::repeat_timeout(o->delayTimeFrames, Timer_CB, userdata);
-         std::cout << "next Frame" << std::endl;
-           o->generalPlayFunction();
-         }
-     }
 
 private:
 
- //this function should be called by all members which read a conformation
- void generalPlayFunction();
- // povray button
- static void cb_povray( Fl_Button*, void* );
- inline void cb_povray_i( Fl_Button*, void* );
+	Fl_Double_Window* window;         //!< The main window with all buttons
+	LeMonADEOpenGL<IngredientsType>* winOpenGL; //!< The OpenGL-window for displaying the conformation
+	LeMonADEViewerAboutWin* winAbout; //!< The about and license window
 
- static void cb_license( Fl_Button*, void* );
- inline void cb_license_i( Fl_Button*, void* );
+	Fl_Button* B_ReverseWindingStart; //!< Button for first frame
+	Fl_Button* B_ReverseWinding;      //!< Button for one frame reverse winding
+	Fl_Light_Button* B_Play;          //!< Button for showing the frames
+	Fl_Button* B_ForwardWinding;      //!< Button for one frame forward winding
+	Fl_Button* B_ForwardWindingEnd;   //!< Button for last frame
 
- static void cb_colorchooser( Fl_Button*, void* );
- inline void cb_colorchooser_i( Fl_Button*, void* );
+	Fl_Check_Button* CB_ShowBonds;    //!< Button for displaying bonds
+	Fl_Check_Button* CB_FoldBack;     //!< Button for displaying periodicity
+	Fl_Check_Button* CB_Smooth;       //!< Button for smoothing coordinates
+	Fl_Spinner* CB_SmoothSpinner;     //!< Spinner for number frames for smoothing coordinates
 
- // show bonds button
- static void cb_showbonds( Fl_Check_Button*, void* );
- inline void cb_showbonds_i( Fl_Check_Button*);
+	Fl_Counter* C_MonomerSize;        //!< Counter for changing the monomer size in visualization
+	Fl_Counter* C_BondWidth;          //!< Counter for changing the bond width in visualization
+	Fl_Counter* C_DelayFrames;        //!< Counter for delay between frames in visualization
 
- // show bonds button
- static void cb_foldback( Fl_Check_Button*, void* );
- inline void cb_foldback_i( Fl_Check_Button*);
+	Fl_Spinner* S_TranslateDXSpinner; //!< Spinner for visualization offset in X
+	Fl_Spinner* S_TranslateDYSpinner; //!< Spinner for visualization offset in Y
+	Fl_Spinner* S_TranslateDZSpinner; //!< Spinner for visualization offset in Z
 
- static void cb_changeMonomerSize( Fl_Counter*, void* );
- inline void cb_changeMonomerSize_i(  Fl_Counter*);
+	Fl_Check_Button* CB_DrawSpheres;  //!< Checkbox for visualization monomers as spheres
+	Fl_Spinner* S_DrawSpheresSubdivisionSpinner; //!< Spinner for discretization spheres
 
- static void cb_changeBondWidth( Fl_Counter*, void* );
- inline void cb_changeBondWidth_i(  Fl_Counter*);
+	Fl_Choice* Ch_PropertySchemeChoice; //!< Coloring scheme choice (not used)
+	Fl_Choice* Ch_PropertyValueChoice;  //!< Coloring scheme with value
+	Fl_Choice* Ch_PropertyColorChoice;  //!< Coloring scheme with color
 
- static void cb_changeReverseWindingStart( Fl_Button*, void* );
- inline void cb_changeReverseWindingStart_i(  Fl_Button*);
+	Fl_Text_Buffer *T_TextBuffer;     //!< Text buffer for user input and general informations
+	Fl_Text_Display *T_TextDisplay;   //!< Corresponding text display for this
 
- static void cb_changeReverseWinding( Fl_Button*, void* );
- inline void cb_changeReverseWinding_i(  Fl_Button*);
-
-
- static void cb_changeForwardWinding( Fl_Button*, void* );
- inline void cb_changeForwardWinding_i(  Fl_Button*);
-
- static void cb_changeForwardWindingEnd( Fl_Button*, void* );
-  inline void cb_changeForwardWindingEnd_i(  Fl_Button*);
-
- static void cb_changePlay( Fl_Light_Button*, void* );
-  inline void cb_changePlay_i(  Fl_Light_Button*);
+	Fl_Input* I_CommandInput;         //!< User input interface
 
 
-  static void cb_changeDelayFrames( Fl_Counter*, void* );
-   inline void cb_changeDelayFrames_i(  Fl_Counter*);
+	Fl_Output* O_FrameMax;            //!< Label for maximum number of frames in file
+	Fl_Int_Input* I_FrameInput;       //!< Input of current frames in file
 
-   static void  cb_smoothing( Fl_Check_Button*, void* );
-    inline void  cb_smoothing_i( Fl_Check_Button*);
+	IngredientsType& ingredients; //!< The reference of the ingredients
+
+	UpdaterReadBfmFile<IngredientsType> ReadBfmFile; //!< Updater for the file handling
+
+	double delayTimeFrames; //!< The delay time between showing the frames/conformations
+
+	float smoothNumber; //!< Number of conformations used to smooth the visualization
+
+	int FrameNumber; //!< The recent frame of the file
+
+	LineParser CommandLineParser; //!< Simple line parser for user input
+
+	//!< Vector of groups specified by a special functor
+	typedef vector < MonomerGroup<typename IngredientsType::molecules_type> > MonomerGroupVector;
+
+	//!< Vector of groups specified by a special functor
+	MonomerGroupVector linearGroupsVector;
+
+	//!< Map of input commands for handling the user input
+	std::map<std::string, LineCommandBase<IngredientsType, MonomerGroupVector>* > CommandLineMap;
+
+	//!< Reduced filename without path and white-spaces for POV-Ray output
+	std::string cropFilename;
+public:
+
+
+
+void initialize(){
+
+	std::cout <<"Initialize the BFM- File-Reader...";
+	ReadBfmFile.initialize();
+	std::cout <<" done." << std::endl;
+
+	std::cout <<"Initialize FLTK"  << std::endl;
+
+	// creating and setting up the main window
+
+	window = new Fl_Double_Window(25,25,300, 585+35, "LeMonADE-Viewer");
+	{
+		{
+			Fl_Group* o = new Fl_Group(10, 15, 285, 50);
+
+
+				B_ReverseWindingStart = new Fl_Button(10, 22, 30, 30, "@|<");
+				B_ReverseWindingStart->tooltip("Show the first frame");
+				B_ReverseWindingStart->labelsize(22);
+				B_ReverseWindingStart->when(FL_WHEN_CHANGED);
+				B_ReverseWindingStart->callback(( Fl_Callback*)cb_changeReverseWindingStart, this );
+
+
+				B_ReverseWinding = new Fl_Button(45, 22, 30, 30, "@<<");
+				B_ReverseWinding->tooltip("Show the frame before");
+				B_ReverseWinding->labelsize(22);
+				B_ReverseWinding->when(FL_WHEN_CHANGED);
+				B_ReverseWinding->callback(( Fl_Callback*)cb_changeReverseWinding, this );
+
+
+
+				B_Play = new Fl_Light_Button(80, 22, 30, 30, "@||");
+				B_Play->tooltip("Play all Frames.");
+				B_Play->labelsize(12);
+				B_Play->when(FL_WHEN_CHANGED);
+				B_Play->callback(( Fl_Callback*)cb_changePlay, this );
+
+
+				B_ForwardWinding = new Fl_Button(115, 22, 30, 30, "@>>");
+				B_ForwardWinding->tooltip("Show the next Frame.");
+				B_ForwardWinding->labelsize(22);
+
+				B_ForwardWinding->when(FL_WHEN_CHANGED);
+				B_ForwardWinding->callback(( Fl_Callback*)cb_changeForwardWinding, this );
+
+
+				B_ForwardWindingEnd = new Fl_Button(150, 22, 30, 30, "@>|");
+				B_ForwardWindingEnd->tooltip("Show the last frame");
+				B_ForwardWindingEnd->labelsize(22);
+				B_ForwardWindingEnd->when(FL_WHEN_CHANGED);
+				B_ForwardWindingEnd->callback(( Fl_Callback*)cb_changeForwardWindingEnd, this );
+
+
+				Fl_Button* bo = new Fl_Button(195, 22, 30, 30, "P");
+				bo->tooltip("Generates POV-Ray-script");
+				bo->labelfont(FL_BOLD+FL_ITALIC);
+				bo->labelsize(22);
+				bo->callback(( Fl_Callback*)cb_povray, this );
+
+
+				Fl_Button* co = new Fl_Button(230, 22, 30, 30, "C");
+				co->tooltip("ColorChooser");
+				co->labelfont(FL_BOLD+FL_ITALIC);
+				co->labelsize(22);
+				co->callback(( Fl_Callback*)cb_colorchooser, this );
+
+
+				Fl_Button* ao = new Fl_Button(265, 22, 30, 30, "i");
+				ao->tooltip("License Information");
+				ao->labelfont(FL_BOLD+FL_ITALIC);
+				ao->labelsize(22);
+				ao->callback(( Fl_Callback*)cb_license, this );
+
+			o->end();
+
+		}
+
+
+			CB_FoldBack = new Fl_Check_Button(25, 75, 70, 15, "folding back");
+			CB_FoldBack->down_box(FL_DOWN_BOX);
+			CB_FoldBack->labelsize(22);
+			CB_FoldBack->clear();
+			CB_FoldBack->when(FL_WHEN_CHANGED);
+			CB_FoldBack->callback(( Fl_Callback*)cb_foldback, this );
+
+
+			CB_ShowBonds = new Fl_Check_Button(25, 105, 70, 15, "show bonds");
+			CB_ShowBonds->down_box(FL_DOWN_BOX);
+			CB_ShowBonds->labelsize(22);
+			CB_ShowBonds->set();
+			CB_ShowBonds->when(FL_WHEN_CHANGED);
+			CB_ShowBonds->callback(( Fl_Callback*)cb_showbonds, this );
+
+
+		 CB_Smooth = new Fl_Check_Button(25, 135, 70, 15, "smooth");
+		CB_Smooth->tooltip("smoothing the coordinates (CPU-intensive)");
+		CB_Smooth->down_box(FL_DOWN_BOX);
+		CB_Smooth->labelsize(22);
+		CB_Smooth->when(FL_WHEN_CHANGED);
+		CB_Smooth->callback(( Fl_Callback*)cb_smoothing, this );
+
+
+		 CB_SmoothSpinner = new Fl_Spinner(246, 130, 40, 24, "using");
+		CB_SmoothSpinner->tooltip("smoothing using frames");
+		CB_SmoothSpinner->labelsize(22);
+		CB_SmoothSpinner->maximum(128);
+		CB_SmoothSpinner->value(2);
+		CB_SmoothSpinner->when(FL_WHEN_CHANGED);
+		CB_SmoothSpinner->callback(( Fl_Callback*)cb_smoothingSpinner, this );
+
+		 C_MonomerSize = new Fl_Counter(25, 165, 141, 35, "monomer size");
+		C_MonomerSize->tooltip("change the monomer size");
+		C_MonomerSize->labelsize(18);
+		C_MonomerSize->minimum(0.1);
+		C_MonomerSize->maximum(5.0);
+		C_MonomerSize->step(0.05);
+		C_MonomerSize->value(1.0);
+		C_MonomerSize->textsize(18);
+		C_MonomerSize->align(Fl_Align(FL_ALIGN_RIGHT));
+		C_MonomerSize->callback(( Fl_Callback*)cb_changeMonomerSize, this );
+
+		 C_BondWidth = new Fl_Counter(25, 205, 141, 35, "bond width");
+		C_BondWidth->tooltip("change the bond width");
+		C_BondWidth->labelsize(18);
+		C_BondWidth->minimum(0.1);
+		C_BondWidth->maximum(1.0);
+		C_BondWidth->value(0.3);
+		C_BondWidth->step(0.05);
+		C_BondWidth->textsize(18);
+		C_BondWidth->align(Fl_Align(FL_ALIGN_RIGHT));
+		C_BondWidth->callback(( Fl_Callback*)cb_changeBondWidth, this );
+
+		 C_DelayFrames = new Fl_Counter(25, 245, 141, 35, "delay frame");
+		C_DelayFrames->tooltip("the time between showing the frames");
+		C_DelayFrames->labelsize(18);
+		C_DelayFrames->minimum(0.01);
+		C_DelayFrames->maximum(2);
+		C_DelayFrames->step(0.05);
+		C_DelayFrames->value(0.25);
+		C_DelayFrames->textsize(18);
+		C_DelayFrames->align(Fl_Align(FL_ALIGN_RIGHT));
+		C_DelayFrames->callback(( Fl_Callback*)cb_changeDelayFrames, this );
+
+		 S_TranslateDXSpinner = new Fl_Spinner(55, 285, 60, 30, "dX:");
+		S_TranslateDXSpinner->minimum(-1000);
+		S_TranslateDXSpinner->maximum(1000);
+		S_TranslateDXSpinner->value(0);
+		S_TranslateDXSpinner->tooltip("visual translation in X");
+		S_TranslateDXSpinner->when(FL_WHEN_CHANGED);
+		S_TranslateDXSpinner->callback(( Fl_Callback*)s_translateDXSpinner, this );
+
+		S_TranslateDYSpinner = new Fl_Spinner(145, 285, 60, 30, "dY:");
+		S_TranslateDYSpinner->minimum(-1000);
+		S_TranslateDYSpinner->maximum(1000);
+		S_TranslateDYSpinner->value(0);
+		S_TranslateDYSpinner->tooltip("visual translation in Y");
+		S_TranslateDYSpinner->when(FL_WHEN_CHANGED);
+		S_TranslateDYSpinner->callback(( Fl_Callback*)s_translateDYSpinner, this );
+
+		S_TranslateDZSpinner = new Fl_Spinner(235, 285, 60, 30, "dZ:");
+		S_TranslateDZSpinner->minimum(-1000);
+		S_TranslateDZSpinner->maximum(1000);
+		S_TranslateDZSpinner->value(0);
+		S_TranslateDZSpinner->tooltip("visual translation in Z");
+		S_TranslateDZSpinner->when(FL_WHEN_CHANGED);
+		S_TranslateDZSpinner->callback(( Fl_Callback*)s_translateDZSpinner, this );
+
+		CB_DrawSpheres = new Fl_Check_Button(30, 325, 70, 15, "draw spheres");
+		CB_DrawSpheres->down_box(FL_DOWN_BOX);
+		CB_DrawSpheres->tooltip("enables/disables GPU-intensive rendering as spheres");
+		CB_DrawSpheres->callback(( Fl_Callback*)cb_drawSpheres, this );
+
+
+		S_DrawSpheresSubdivisionSpinner = new Fl_Spinner(254, 321, 40, 24, "subdivision:");
+		S_DrawSpheresSubdivisionSpinner->maximum(15);
+		S_DrawSpheresSubdivisionSpinner->minimum(1);
+		S_DrawSpheresSubdivisionSpinner->value(4);
+		S_DrawSpheresSubdivisionSpinner->tooltip("number of subdivision of sphere");
+		S_DrawSpheresSubdivisionSpinner->callback(( Fl_Callback*)s_subdivision, this );
+
+		Ch_PropertySchemeChoice = new Fl_Choice(25, 350, 105, 35);
+		Ch_PropertySchemeChoice->down_box(FL_BORDER_BOX);
+
+		//! @todo add coloring for other schemes
+		//Ch_PropertySchemeChoice->add("NONE");
+		Ch_PropertySchemeChoice->add("ColorAtt");
+		//Ch_PropertySchemeChoice->add("ColorLinks");
+		//Ch_PropertySchemeChoice->add("ColorGroup");
+		Ch_PropertySchemeChoice->value(0);
+
+
+		{
+			// dirty work-around to get all attributes in ingredients
+			// and only allow them to be shown
+			std::set<int> myset;
+
+			for(uint32_t i = 0; i < ingredients.getMolecules().size(); i++)
+				myset.insert(ingredients.getMolecules()[i].getAttributeTag());
+
+			Ch_PropertyValueChoice = new Fl_Choice(25+105, 350, 85, 35);
+			Ch_PropertyValueChoice->down_box(FL_BORDER_BOX);
+
+			Ch_PropertyValueChoice->add("NONE");
+
+			//add the other attributes
+			for (std::set<int>::iterator it=myset.begin(); it!=myset.end(); ++it)
+			{
+				std::stringstream ss;
+				ss << *it;
+				Ch_PropertyValueChoice->add((ss.str()).c_str());
+			}
+			Ch_PropertyValueChoice->value(0);
+
+		}
+
+		Ch_PropertyColorChoice = new Fl_Choice(25+105+85, 350, 85, 35);
+		Ch_PropertyColorChoice->down_box(FL_BORDER_BOX);
+		Ch_PropertyColorChoice->when(FL_WHEN_RELEASE|FL_WHEN_NOT_CHANGED);
+		//Ch_PropertyColorChoice->labelsize(12);
+		//Ch_PropertyColorChoice->textsize(11);
+		Ch_PropertyColorChoice->callback((Fl_Callback*)ch_propertycolorchooser, this);
+		Ch_PropertyColorChoice->add("NONE");
+		Ch_PropertyColorChoice->add("White");
+		Ch_PropertyColorChoice->add("Black");
+		Ch_PropertyColorChoice->add("Red");
+		Ch_PropertyColorChoice->add("Green");
+		Ch_PropertyColorChoice->add("Blue");
+		Ch_PropertyColorChoice->add("Yellow");
+		Ch_PropertyColorChoice->add("Magenta");
+		Ch_PropertyColorChoice->add("Cyan");
+		Ch_PropertyColorChoice->add("Orange");
+		// maybe add some othere colors
+
+		Ch_PropertyColorChoice->value(0);
+
+		//also set the color of the label accordingly
+		Fl_Menu_Item* array = const_cast<Fl_Menu_Item*>( Ch_PropertyColorChoice->menu() );
+
+		// Change color of added item to Red
+		array[ 0 ].labelcolor (FL_BLACK); // None
+		array[ 1 ].labelcolor (FL_BLACK); // White
+		array[ 2 ].labelcolor (FL_BLACK);
+		array[ 3 ].labelcolor (FL_RED);
+		array[ 4 ].labelcolor (FL_GREEN);
+		array[ 5 ].labelcolor (FL_BLUE);
+		array[ 6 ].labelcolor (FL_YELLOW);
+		array[ 7 ].labelcolor (FL_MAGENTA);
+		array[ 8 ].labelcolor (FL_CYAN);
+		array[ 9 ].labelcolor (fl_rgb_color(255,160,32));
+
+
+		T_TextBuffer = new Fl_Text_Buffer();
+		T_TextDisplay = new Fl_Text_Display(25, 355+35, 250, 110);
+		T_TextDisplay->buffer(T_TextBuffer);
+		T_TextDisplay->wrap_mode( Fl_Text_Display::WRAP_AT_BOUNDS,0);
+
+
+		I_CommandInput = new Fl_Input(25, 492+35, 250, 43, "command:");
+		I_CommandInput->align(Fl_Align(FL_ALIGN_TOP));
+
+		I_CommandInput->tooltip("!setColor:idxMono1-idxMono2=(red,green,blue)\n"
+				"!setColor:all=(red,green,blue)\n"
+				"!setColorAttributes:att=(red,green,blue)\n"
+				"!setColorLinks:numLinks=(red,green,blue)\n"
+				"!setColorVisibility:vis=(red,green,blue)\n"
+				"!setColorGroups:idxGroup=(red,green,blue)\n"
+				"!setColorGroupsRandom\n"
+				"!setColor:BG=(red,green,blue)\n"
+				"!setVisible:idxMono1-idxMono2=vis\n"
+				"!setVisible:all=vis\n"
+				"!setVisibleAttributes:att=vis\n"
+				"!setVisibleLinks:numLinks=vis\n"
+				"!setVisibleGroups:idxG1-idxG2=vis\n"
+				"!setRadius:idxMono1-idxMono2=radius\n"
+				"!setRadius:all=radius\n"
+				"!setRadiusAttributes:att=radius\n"
+				"!setRadiusLinks:numLinks=radius\n"
+				"!setRadiusGroups:idxGroup=radius\n");
+
+		I_CommandInput->when(FL_WHEN_ENTER_KEY|FL_WHEN_NOT_CHANGED);
+		I_CommandInput->callback(( Fl_Callback*)cb_changeCommandInput, this );
+
+
+		{
+			I_FrameInput = new Fl_Int_Input(85, 540+35, 90, 24, "Frame");
+			I_FrameInput->labelsize(18);
+
+			std::stringstream sd("");
+			sd << "1";
+
+			I_FrameInput->value(sd.str().c_str());
+
+			I_FrameInput->tooltip("set the frame to read");
+			I_FrameInput->when(FL_WHEN_ENTER_KEY);
+			I_FrameInput->callback(( Fl_Callback*)cb_changeFrameInput, this );
+		}
+		{
+			std::stringstream sd("");
+			sd << ReadBfmFile.getNumFrames();
+
+			std::cout<<sd.str() << std::endl;
+
+			O_FrameMax = new Fl_Output(185, 540+35, 90, 24, "/");
+			O_FrameMax->labelsize(18);
+			O_FrameMax->value(sd.str().c_str());
+		}
+
+		window->end();
+		window->resizable(window);
+	} // Fl_Double_Window* o
+
+
+	// fill the groups with connected structures by an functor
+	// fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>(&(this->ingredients.getMolecules())),alwaysTrue() );
+	fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>(&(this->ingredients.getMolecules())),belongsToLinearStrand() );
+
+	// create the OpenGL window
+	winOpenGL= new LeMonADEOpenGL<IngredientsType>(ingredients, linearGroupsVector, 400,25,800,800, "LeMonADE-Viewer OpenGL");
+	winOpenGL->initialize();
+	winOpenGL->resizable(winOpenGL);
+
+	// show both windows
+	window->show();
+	winOpenGL->show();
+
+    // create the license and about windows
+	winAbout = new LeMonADEViewerAboutWin(600,600,"About LeMonADE-Viewer");
+
+
+	// define the user-commands
+	CommandLineMap["!setColor"] = new CommandSetColor<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setColorAttributes"] = new CommandSetColorAttributes<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setColorLinks"] = new CommandSetColorLinks<IngredientsType, MonomerGroupVector>();
+
+	CommandLineMap["!setVisibleAttributes"] = new CommandSetVisibleAttributes<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setVisibleLinks"] = new CommandSetVisibleLinks<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setVisible"] = new CommandSetVisible<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setVisibleGroups"] = new CommandSetVisibleGroups<IngredientsType, MonomerGroupVector>();
+
+	CommandLineMap["!setColorVisibility"] = new CommandSetColorVisibility<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setColorGroups"] = new CommandSetColorGroups<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setColorGroupsRandom"] = new CommandSetColorGroupsRandom<IngredientsType, MonomerGroupVector>();
+
+	CommandLineMap["!setRadius"] = new CommandSetRadius<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setRadiusAttributes"] = new CommandSetRadiusAttributes<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setRadiusLinks"] = new CommandSetRadiusLinks<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setRadiusGroups"] = new CommandSetRadiusGroups<IngredientsType, MonomerGroupVector>();
+
+	CommandLineMap["!help"] = new CommandGetHelp<IngredientsType, MonomerGroupVector>();
+
+	// message in the info box
+	std::stringstream startMessage;
+	startMessage << "box (" << ingredients.getBoxX() << ", " << ingredients.getBoxY() << "," << ingredients.getBoxZ() <<")" << std::endl;
+	startMessage << "periodic (" << (ingredients.isPeriodicX()?"true":"false") << ", " << (ingredients.isPeriodicY()?"true":"false") << "," << (ingredients.isPeriodicZ()?"true":"false") <<")" << std::endl;
+	startMessage << "number monomers = " << ingredients.getMolecules().size()<< std::endl;
+	startMessage << "number groups = " << linearGroupsVector.size()<< std::endl;
+	startMessage << "type \"!help\" for all commands " << std::endl;
+
+	T_TextBuffer->append(startMessage.str().c_str());
+	I_CommandInput->value("!help");
+
+}
+
+// work-around simple timer for visualization
+static void Timer_CB(void *userdata) {
+	LeMonADEViewer<IngredientsType> *o = (LeMonADEViewer<IngredientsType>*)userdata;
+
+	if(!o->ReadBfmFile.execute())
+	{
+		Fl::remove_timeout(Timer_CB);
+		o->B_Play->clear();
+		o->B_Play->label("@||");
+		o->generalPlayFunction();
+	}
+	else
+	{
+		Fl::repeat_timeout(o->delayTimeFrames, Timer_CB, userdata);
+		//std::cout << "next Frame" << std::endl;
+		o->generalPlayFunction();
+	}
+}
+
+private:
+
+
+//this function should be called by all members which read a conformation
+void generalPlayFunction();
+
+// these functions are work around to handle the old non-OOP-FLTK-interfaces
+// see http://www.fltk.org/articles.php?L379
+/*
+static void static_callback(Fl_Widget* w, void* data) {
+	((LeMonADEViewer*)data)->real_callback(w);
+}
+
+void real_callback(Fl_Widget* w) {
+
+	std::cout << "width: " << w->w()  << std::endl;
+}
+*/
+
+// povray button
+static void cb_povray( Fl_Button*, void* );
+inline void cb_povray_i( Fl_Button*, void* );
+
+// license window
+static void cb_license( Fl_Button*, void* );
+inline void cb_license_i( Fl_Button*, void* );
+
+// color chooser button
+static void cb_colorchooser( Fl_Button*, void* );
+inline void cb_colorchooser_i( Fl_Button*, void* );
+
+// show bonds button
+static void cb_showbonds( Fl_Check_Button*, void* );
+inline void cb_showbonds_i( Fl_Check_Button*);
+
+// apply periodicity
+static void cb_foldback( Fl_Check_Button*, void* );
+inline void cb_foldback_i( Fl_Check_Button*);
+
+static void cb_changeMonomerSize( Fl_Counter*, void* );
+inline void cb_changeMonomerSize_i(  Fl_Counter*);
+
+static void cb_changeBondWidth( Fl_Counter*, void* );
+inline void cb_changeBondWidth_i(  Fl_Counter*);
+
+static void cb_changeReverseWindingStart( Fl_Button*, void* );
+inline void cb_changeReverseWindingStart_i(  Fl_Button*);
+
+static void cb_changeReverseWinding( Fl_Button*, void* );
+inline void cb_changeReverseWinding_i(  Fl_Button*);
+
+static void cb_changeForwardWinding( Fl_Button*, void* );
+inline void cb_changeForwardWinding_i(  Fl_Button*);
+
+static void cb_changeForwardWindingEnd( Fl_Button*, void* );
+inline void cb_changeForwardWindingEnd_i(  Fl_Button*);
+
+static void cb_changePlay( Fl_Light_Button*, void* );
+inline void cb_changePlay_i(  Fl_Light_Button*);
+
+static void cb_changeDelayFrames( Fl_Counter*, void* );
+inline void cb_changeDelayFrames_i(  Fl_Counter*);
+
+static void  cb_smoothing( Fl_Check_Button*, void* );
+inline void  cb_smoothing_i( Fl_Check_Button*);
 
 static void  cb_smoothingSpinner( Fl_Spinner*, void* );
 inline void  cb_smoothingSpinner_i( Fl_Spinner*);
@@ -661,10 +638,8 @@ inline void  cb_smoothingSpinner_i( Fl_Spinner*);
 static void  s_translateDXSpinner( Fl_Spinner*, void* );
 inline void  s_translateDXSpinner_i( Fl_Spinner*);
 
-
 static void  s_translateDYSpinner( Fl_Spinner*, void* );
 inline void  s_translateDYSpinner_i( Fl_Spinner*);
-
 
 static void  s_translateDZSpinner( Fl_Spinner*, void* );
 inline void  s_translateDZSpinner_i( Fl_Spinner*);
@@ -681,58 +656,46 @@ inline void  ch_propertycolorchooser_i(Fl_Choice*);
 static void  cb_changeCommandInput( Fl_Input*, void* );
 inline void  cb_changeCommandInput_i( Fl_Input*);
 
-
 static void  cb_changeFrameInput( Fl_Int_Input*, void* );
 inline void  cb_changeFrameInput_i( Fl_Int_Input*);
 
 
- static void static_callback(Fl_Widget* w, void* data) {
-     ((LeMonADEViewer*)data)->real_callback(w);
-   }
+void calculateSmoothCoodinates();
 
-   void real_callback(Fl_Widget* w) {
-
-	   std::cout << "width: " << w->w()  << std::endl;
-   }
-
-   void calculateSmoothCoodinates();
-
-   public:
-
-  void cleanup(){ }
-
-    
-  // Implementation of execute(), which defines all the properties of the graphical display
-  bool execute()
-  {
-	  // print the current monte carlo step number
-	      std::cout << "*******************************************\n"
-	  	      << "monte carlo step " << ingredients.getMolecules().getAge()  << std::endl;
-
-	      int boxX = this->ingredients.getBoxX();
-	      int boxY = this->ingredients.getBoxY();
-	      int boxZ = this->ingredients.getBoxZ();
-
-	      for (;;) {
-	          if (winOpenGL->visible())
-	            {if (!Fl::check()) break;}	// returns immediately
-	          else
-	            {if (!Fl::wait(10)) break;}	// waits until something happens
+public:
 
 
-
-	          winOpenGL->redraw();
-
+void cleanup(){ }
 
 
-	          //if (Fl::readqueue() == button) break;
-	          if (Fl::readqueue()==winOpenGL) break;
-	        }
+// Implementation of execute(), which defines all the properties of the graphical display
+bool execute()
+{
+	// print the current monte carlo step number
+	std::cout << "*******************************************\n"
+			<< "monte carlo step " << ingredients.getMolecules().getAge()  << std::endl;
 
-	  return Fl::run();
-  }
-  
-//  SDL_Quit();
+	int boxX = this->ingredients.getBoxX();
+	int boxY = this->ingredients.getBoxY();
+	int boxZ = this->ingredients.getBoxZ();
+
+	for (;;) {
+		if (winOpenGL->visible()) // returns immediately
+		{
+			if (!Fl::check()) break;
+		}
+		else // waits until something happens
+		{
+			if (!Fl::wait(10)) break;
+		}
+
+		winOpenGL->redraw();
+
+		if (Fl::readqueue()==winOpenGL) break;
+	}
+
+	return Fl::run();
+}
 
 
 };
@@ -757,38 +720,39 @@ void LeMonADEViewer<IngredientsType>::generalPlayFunction()
 //doing the Button-Povray-Callback
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_povray( Fl_Button* obj, void* v )
-	{
-		LeMonADEViewer<IngredientsType> * T=( LeMonADEViewer<IngredientsType>* )v;
-	    T->cb_povray_i(obj,v);
-	}
+{
+	LeMonADEViewer<IngredientsType> * T=( LeMonADEViewer<IngredientsType>* )v;
+	T->cb_povray_i(obj,v);
+}
 
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_povray_i( Fl_Button* , void* )
-	{
-	   std::cout << "Povray-script" << std::endl;
+{
+	std::cout << "generate POV-Ray-script" << std::endl;
+
+	std::stringstream FilenamePovray;
+	uint32_t request_frame = atoi(I_FrameInput->value());
+	FilenamePovray << cropFilename << "_" << setfill('0') << setw(6) << request_frame;
+	std::cout << FilenamePovray.str() << std::endl;
+	std::string croppedFilenamePovray = FilenamePovray.str();
+
+	winOpenGL->generatePovRayScript(croppedFilenamePovray);
+
+	std::stringstream povrayCommand;
+
+	povrayCommand << "povray +I" << croppedFilenamePovray << ".pov +O" << croppedFilenamePovray << ".png +W";
+	povrayCommand << winOpenGL->w();
+	povrayCommand << " +H";
+	povrayCommand << winOpenGL->h();
+	//povrayCommand << " +P ";
+
+	std::cout << "execute command:" << std::endl;
+	std::cout << povrayCommand.str() << std::endl;
+
+	system (povrayCommand.str().c_str());
 
 
-	   std::stringstream FilenamePovray;
-	   uint32_t request_frame = atoi(I_FrameInput->value());
-	   FilenamePovray << cropFilename << "_" << setfill('0') << setw(6) << request_frame;
-	   std::cout << FilenamePovray.str() << std::endl;
-	   std::string croppedFilenamePovray = FilenamePovray.str();
-
-	   winOpenGL->generatePovRayScript(croppedFilenamePovray);
-
-	   std::stringstream povrayCommand;
-
-	   povrayCommand << "povray +I" << croppedFilenamePovray << ".pov +O" << croppedFilenamePovray << ".png +W";
-	   povrayCommand << winOpenGL->w();
-	   povrayCommand << " +H";
-	   povrayCommand << winOpenGL->h();
-	   //povrayCommand << " +P ";
-
-
-	   system (povrayCommand.str().c_str());
-
-
-	}
+}
 
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_license( Fl_Button* obj, void* v )
@@ -803,40 +767,19 @@ template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_license_i( Fl_Button* , void* )
 {
 	std::cout << "About LeMonADE-Viewer" << std::endl;
-	//const char *helpmsg = outputline.c_str();
 
-	/*static Fl_Double_Window *helpwin  = 0;
-	static Fl_Text_Display  *helpdisp = 0;
-	static Fl_Text_Buffer   *helpbuff = 0;
-	if ( !helpwin ) {
-	  Fl_Group::current(0);  // ensure we don't become child of other win
-	  helpwin = new Fl_Double_Window(600,600,"About LeMonADE-Viewer");
-	  helpdisp = new Fl_Text_Display(0,0,helpwin->w(),helpwin->h());
-	  helpbuff = new Fl_Text_Buffer();
-	  helpdisp->buffer(helpbuff);
-	  helpdisp->textfont(FL_COURIER);
-	  helpdisp->textsize(12);
-	  helpbuff->text(helpmsg);
-	  helpwin->end();
-	}*/
-	//winAbout->resizable(helpdisp);
-	//if ( !winAbout)
-
-		winAbout->showing();
-
-
+	winAbout->showing();
 
 	// should be replace by the info -box
-	//   std::cout << "Create png: testimage.png" << std::endl;
-	//   winOpenGL->screenshoot("testimage.png");
+
 }
 
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_colorchooser( Fl_Button* obj, void* v )
 {
 
-		LeMonADEViewer<IngredientsType> * T=( LeMonADEViewer<IngredientsType>* )v;
-		T->cb_colorchooser_i(obj,v);
+	LeMonADEViewer<IngredientsType> * T=( LeMonADEViewer<IngredientsType>* )v;
+	T->cb_colorchooser_i(obj,v);
 
 }
 
@@ -847,10 +790,10 @@ void LeMonADEViewer<IngredientsType>::cb_colorchooser_i( Fl_Button* obj, void* v
 	r = g = b = 1.0;
 	if (!fl_color_chooser("New color:",r,g,b,0)) return;
 
-	std::cout << "choosing color (r,g,b) = (" << r << ", " << g << "," << b <<")"  << std::endl;
+	std::cout << "choosing color (r,g,b) = (" << r << ", " << g << ", " << b <<")"  << std::endl;
 
 	std::stringstream sd;
-	     	sd << "color (" << r << ", " << g << "," << b <<")" << std::endl;
+	sd << "color (" << r << ", " << g << ", " << b <<")" << std::endl;
 
 	T_TextBuffer->append(sd.str().c_str());
 }
@@ -865,9 +808,9 @@ void LeMonADEViewer<IngredientsType>::cb_showbonds( Fl_Check_Button* obj, void* 
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_showbonds_i( Fl_Check_Button* obj)
 {
-	std::cout << "checkButton_ShowBonds" << std::endl;
-	std::cout << "State " <<  int(CB_ShowBonds->value()) << std::endl;
-	winOpenGL->setShowingBonds(CB_ShowBonds->value());
+	//std::cout << "checkButton_ShowBonds" << std::endl;
+	//std::cout << "State " <<  int(CB_ShowBonds->value()) << std::endl;
+	ingredients.setVisualizeBonds(bool (CB_ShowBonds->value()));
 }
 
 
@@ -880,9 +823,9 @@ void LeMonADEViewer<IngredientsType>::cb_foldback( Fl_Check_Button* obj, void* v
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_foldback_i( Fl_Check_Button* obj)
 {
-	std::cout << "checkButton_Foldback" << std::endl;
-	std::cout << "State " <<  int(CB_FoldBack->value()) << std::endl;
-	winOpenGL->setFoldingBack(CB_FoldBack->value());
+	//std::cout << "checkButton_Foldback" << std::endl;
+	//std::cout << "State " <<  int(CB_FoldBack->value()) << std::endl;
+	ingredients.setVisualizePBC(bool (CB_FoldBack->value()));
 }
 
 template <class IngredientsType>
@@ -892,13 +835,15 @@ void LeMonADEViewer<IngredientsType>::cb_changeMonomerSize( Fl_Counter* obj, voi
 }
 
 template <class IngredientsType>
-void LeMonADEViewer<IngredientsType>::cb_changeMonomerSize_i(  Fl_Counter* obj){
-
-	std::cout << "change point size" << std::endl;
-	std::cout << "State " <<  (C_MonomerSize->value()) << std::endl;
+void LeMonADEViewer<IngredientsType>::cb_changeMonomerSize_i(  Fl_Counter* obj)
+{
+	//std::cout << "change point size" << std::endl;
+	//std::cout << "State " <<  (C_MonomerSize->value()) << std::endl;
 	//winOpenGL->setPointSize(C_MonomerSize->value());
-	winOpenGL->setRadiusMonomer(C_MonomerSize->value());
+	//winOpenGL->setRadiusMonomer(C_MonomerSize->value());
 
+	for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+		ingredients.modifyMolecules()[i].setRadius( C_MonomerSize->value());
 }
 
 template <class IngredientsType>
@@ -908,11 +853,12 @@ void LeMonADEViewer<IngredientsType>::cb_changeBondWidth( Fl_Counter* obj, void*
 }
 
 template <class IngredientsType>
-void LeMonADEViewer<IngredientsType>::cb_changeBondWidth_i(  Fl_Counter* obj){
-
-	std::cout << "change BondWidth" << std::endl;
-	std::cout << "State " <<  int(C_BondWidth->value()) << std::endl;
-	winOpenGL->setBondWidth(C_BondWidth->value());
+void LeMonADEViewer<IngredientsType>::cb_changeBondWidth_i(  Fl_Counter* obj)
+{
+	//std::cout << "change BondWidth" << std::endl;
+	//std::cout << "State " <<  int(C_BondWidth->value()) << std::endl;
+	//winOpenGL->setBondWidth(C_BondWidth->value());
+	ingredients.setWidthBond(C_BondWidth->value());
 }
 
 
@@ -923,7 +869,8 @@ void LeMonADEViewer<IngredientsType>::cb_changeReverseWindingStart( Fl_Button* o
 }
 
 template <class IngredientsType>
-void LeMonADEViewer<IngredientsType>::cb_changeReverseWindingStart_i(  Fl_Button* obj){
+void LeMonADEViewer<IngredientsType>::cb_changeReverseWindingStart_i(  Fl_Button* obj)
+{
 
 	if(B_ReverseWindingStart->value() == 1)
 	{
@@ -932,7 +879,7 @@ void LeMonADEViewer<IngredientsType>::cb_changeReverseWindingStart_i(  Fl_Button
 		generalPlayFunction();
 
 		Fl::remove_timeout(Timer_CB);
-		std::cout << "next Frame" << std::endl;
+		//std::cout << "next Frame" << std::endl;
 	}
 }
 
@@ -948,7 +895,7 @@ void LeMonADEViewer<IngredientsType>::cb_changeReverseWinding_i(  Fl_Button* obj
 
 	if(B_ReverseWinding->value() == 1)
 	{
-		std::cout << "rec Frame" << ReadBfmFile.getRecentFrameCount()<< std::endl;
+		//std::cout << "rec Frame" << ReadBfmFile.getRecentFrameCount()<< std::endl;
 
 		if((ReadBfmFile.getRecentFrameCount() > 1))
 		ReadBfmFile.gotoFrame(ReadBfmFile.getRecentFrameCount()-1);
@@ -956,7 +903,7 @@ void LeMonADEViewer<IngredientsType>::cb_changeReverseWinding_i(  Fl_Button* obj
 		generalPlayFunction();
 
 		Fl::remove_timeout(Timer_CB);
-		std::cout << "reverse winding Frame" << std::endl;
+		//std::cout << "reverse winding Frame" << std::endl;
 	}
 }
 
@@ -967,7 +914,8 @@ void LeMonADEViewer<IngredientsType>::cb_changeForwardWinding( Fl_Button* obj, v
 }
 
 template <class IngredientsType>
-void LeMonADEViewer<IngredientsType>::cb_changeForwardWinding_i(  Fl_Button* obj){
+void LeMonADEViewer<IngredientsType>::cb_changeForwardWinding_i(  Fl_Button* obj)
+{
 
 	if(B_ForwardWinding->value() == 1)
 	{
@@ -975,41 +923,31 @@ void LeMonADEViewer<IngredientsType>::cb_changeForwardWinding_i(  Fl_Button* obj
 
 		generalPlayFunction();
 
-
 		Fl::remove_timeout(Timer_CB);
-		std::cout << "next Frame" << std::endl;
-
-
+		//std::cout << "next Frame" << std::endl;
 	}
-
-
 }
 
 
- template <class IngredientsType>
- void LeMonADEViewer<IngredientsType>::cb_changeForwardWindingEnd( Fl_Button* obj, void* v)
- {
- 	(( LeMonADEViewer<IngredientsType>* )v)->cb_changeForwardWindingEnd_i(obj);
- }
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::cb_changeForwardWindingEnd( Fl_Button* obj, void* v)
+{
+	(( LeMonADEViewer<IngredientsType>* )v)->cb_changeForwardWindingEnd_i(obj);
+}
 
- template <class IngredientsType>
- void LeMonADEViewer<IngredientsType>::cb_changeForwardWindingEnd_i(  Fl_Button* obj){
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::cb_changeForwardWindingEnd_i(  Fl_Button* obj)
+{
+	if(B_ForwardWindingEnd->value() == 1)
+	{
+		ReadBfmFile.gotoEnd();
 
- 	if(B_ForwardWindingEnd->value() == 1)
- 	{
- 		ReadBfmFile.gotoEnd();
+		generalPlayFunction();
 
- 		generalPlayFunction();
-
-
- 		Fl::remove_timeout(Timer_CB);
- 		std::cout << "last Frame" << std::endl;
-
-
- 	}
-
-
- }
+		Fl::remove_timeout(Timer_CB);
+		//std::cout << "last Frame" << std::endl;
+	}
+}
 
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_changePlay( Fl_Light_Button* obj, void* v)
@@ -1018,18 +956,15 @@ void LeMonADEViewer<IngredientsType>::cb_changePlay( Fl_Light_Button* obj, void*
 }
 
 template <class IngredientsType>
-void LeMonADEViewer<IngredientsType>::cb_changePlay_i(  Fl_Light_Button* obj){
-
+void LeMonADEViewer<IngredientsType>::cb_changePlay_i(  Fl_Light_Button* obj)
+{
 	if(B_Play->value() == 1)
 	{
 		B_Play->label("@>");
 
 		//reading is now done in execute
 		//show frames
-
-
 		Fl::add_timeout(delayTimeFrames, Timer_CB, (void*)this);
-
 	}
 	if(B_Play->value() == 0)
 	{
@@ -1037,7 +972,6 @@ void LeMonADEViewer<IngredientsType>::cb_changePlay_i(  Fl_Light_Button* obj){
 		//pausing
 		 Fl::remove_timeout(Timer_CB);
 	}
-
 }
 
 
@@ -1048,13 +982,12 @@ void LeMonADEViewer<IngredientsType>::cb_changeDelayFrames( Fl_Counter* obj, voi
 }
 
 template <class IngredientsType>
-void LeMonADEViewer<IngredientsType>::cb_changeDelayFrames_i(  Fl_Counter* obj){
-
-	std::cout << "change changeDelayFrames" << std::endl;
-	std::cout << "State " <<  (C_DelayFrames->value()) << std::endl;
+void LeMonADEViewer<IngredientsType>::cb_changeDelayFrames_i(  Fl_Counter* obj)
+{
+	//std::cout << "change changeDelayFrames" << std::endl;
+	//std::cout << "State " <<  (C_DelayFrames->value()) << std::endl;
 	delayTimeFrames=C_DelayFrames->value();
 }
-
 
 
 template <class IngredientsType>
@@ -1066,13 +999,10 @@ void LeMonADEViewer<IngredientsType>::cb_smoothing( Fl_Check_Button* obj, void* 
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_smoothing_i( Fl_Check_Button* obj)
 {
-	std::cout << "check smoothing" << std::endl;
-	std::cout << "State " <<  int(CB_Smooth->value()) << std::endl;
-
+	//std::cout << "check smoothing" << std::endl;
+	//std::cout << "State " <<  int(CB_Smooth->value()) << std::endl;
 	ingredients.setSmoothing(CB_Smooth->value());
-
 }
-
 
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_smoothingSpinner(  Fl_Spinner* obj, void* v)
@@ -1083,13 +1013,12 @@ void LeMonADEViewer<IngredientsType>::cb_smoothingSpinner(  Fl_Spinner* obj, voi
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_smoothingSpinner_i(  Fl_Spinner* obj)
 {
-	std::cout << "check smoothingSpinner" << std::endl;
-	std::cout << "State " <<  int(CB_SmoothSpinner->value()) << std::endl;
+	//std::cout << "check smoothingSpinner" << std::endl;
+	//std::cout << "State " <<  int(CB_SmoothSpinner->value()) << std::endl;
 
 	ingredients.setMaxNumSmoothingFrame(uint8_t(CB_SmoothSpinner->value()));
 	smoothNumber=0;
 	FrameNumber=0;
-
 }
 
 
@@ -1102,9 +1031,8 @@ void LeMonADEViewer<IngredientsType>::s_translateDXSpinner(  Fl_Spinner* obj, vo
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::s_translateDXSpinner_i(  Fl_Spinner* obj)
 {
-	std::cout << "translate DX" << std::endl;
-	std::cout << "State " <<  int(S_TranslateDXSpinner->value()) << std::endl;
-
+	//std::cout << "translate DX" << std::endl;
+	//std::cout << "State " <<  int(S_TranslateDXSpinner->value()) << std::endl;
 	ingredients.setTranslationInX(uint32_t(S_TranslateDXSpinner->value()));
 }
 
@@ -1117,9 +1045,8 @@ void LeMonADEViewer<IngredientsType>::s_translateDYSpinner(  Fl_Spinner* obj, vo
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::s_translateDYSpinner_i(  Fl_Spinner* obj)
 {
-	std::cout << "translate DY" << std::endl;
-	std::cout << "State " <<  int(S_TranslateDYSpinner->value()) << std::endl;
-
+	//std::cout << "translate DY" << std::endl;
+	//std::cout << "State " <<  int(S_TranslateDYSpinner->value()) << std::endl;
 	ingredients.setTranslationInY(uint32_t(S_TranslateDYSpinner->value()));
 }
 
@@ -1132,9 +1059,8 @@ void LeMonADEViewer<IngredientsType>::s_translateDZSpinner(  Fl_Spinner* obj, vo
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::s_translateDZSpinner_i(  Fl_Spinner* obj)
 {
-	std::cout << "translate DZ" << std::endl;
-	std::cout << "State " <<  int(S_TranslateDZSpinner->value()) << std::endl;
-
+	//std::cout << "translate DZ" << std::endl;
+	//std::cout << "State " <<  int(S_TranslateDZSpinner->value()) << std::endl;
 	ingredients.setTranslationInZ(uint32_t(S_TranslateDZSpinner->value()));
 }
 
@@ -1148,9 +1074,8 @@ void LeMonADEViewer<IngredientsType>::cb_drawSpheres(  Fl_Check_Button* obj, voi
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_drawSpheres_i(  Fl_Check_Button* obj)
 {
-	std::cout << "check drawSpheres" << std::endl;
-	std::cout << "State " <<  int(CB_DrawSpheres->value()) << std::endl;
-
+	//std::cout << "check drawSpheres" << std::endl;
+	//std::cout << "State " <<  int(CB_DrawSpheres->value()) << std::endl;
 	ingredients.setDrawingMonomersAsSpheres(CB_DrawSpheres->value());
 
 	winOpenGL->precalculateSphere(ingredients.getSubdivisionSpheres(),ingredients.getSubdivisionSpheres());
@@ -1165,86 +1090,42 @@ void LeMonADEViewer<IngredientsType>::s_subdivision(  Fl_Spinner* obj, void* v)
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::s_subdivision_i(  Fl_Spinner* obj)
 {
-	std::cout << "subdivision" << std::endl;
-	std::cout << "State " <<  int(S_DrawSpheresSubdivisionSpinner->value()) << std::endl;
-
+	//std::cout << "subdivision" << std::endl;
+	//std::cout << "State " <<  int(S_DrawSpheresSubdivisionSpinner->value()) << std::endl;
 	ingredients.setSubdivisionSpheres(uint8_t(S_DrawSpheresSubdivisionSpinner->value()));
 
 	winOpenGL->precalculateSphere(ingredients.getSubdivisionSpheres(),ingredients.getSubdivisionSpheres());
-
 }
 
 
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::calculateSmoothCoodinates()
 {
-	//ingredients.modifyMolecules()setSmoothing(CB_Smooth->value());
-	//ingredients.modifyMolecules()[i].setVisible(false);
-
 	if (FrameNumber >= ingredients.getMaxNumSmoothingFrame())
-				  {
+	{
+		for(uint32_t t = 0; t < ingredients.modifyMolecules().size(); t++)
+		{
+			ingredients.modifyMolecules()[t].setSmoothCoordinateBetween((smoothNumber/(smoothNumber+1.0f))*ingredients.modifyMolecules()[t].getSmoothCoordinateBetween() + VectorFloat3(ingredients.modifyMolecules()[t].getVector3D())*(1.0f/(smoothNumber+1.0f)));
+		}
 
+		for(uint32_t t = 0; t < ingredients.modifyMolecules().size(); t++)
+		{
+			ingredients.modifyMolecules()[t].setSmoothCoordinateBetween((smoothNumber/(smoothNumber+1.0f))*ingredients.modifyMolecules()[t].getSmoothCoordinate() - ingredients.modifyMolecules()[t].getSmoothCoordinateBetween()*(1.0f/(smoothNumber+1.0f)));
+		}
 
+	}
 
+	for(uint32_t t = 0; t < ingredients.modifyMolecules().size(); t++)
+	{
+		ingredients.modifyMolecules()[t].setSmoothCoordinate((smoothNumber/(smoothNumber+1.0f))*ingredients.modifyMolecules()[t].getSmoothCoordinate() + VectorFloat3(ingredients.modifyMolecules()[t].getVector3D())*(1.0f/(smoothNumber+1.0f)));
+	}
 
-		 for(uint32_t t = 0; t < ingredients.modifyMolecules().size(); t++)
-				  {
-			 ingredients.modifyMolecules()[t].setSmoothCoordinateBetween((smoothNumber/(smoothNumber+1.0f))*ingredients.modifyMolecules()[t].getSmoothCoordinateBetween() + VectorFloat3(ingredients.modifyMolecules()[t].getVector3D())*(1.0f/(smoothNumber+1.0f)));
-
-					/* SmoothArray_x[t][1] =  SmoothArray_x[t][1] * (smoothNumber/(smoothNumber+1.0f)) + xwert(Koord[t])/(smoothNumber+1);
-					 SmoothArray_y[t][1] =  SmoothArray_y[t][1] * (smoothNumber/(smoothNumber+1.0f)) + ywert(Koord[t])/(smoothNumber+1);
-					 SmoothArray_z[t][1] =  SmoothArray_z[t][1] * (smoothNumber/(smoothNumber+1.0f)) + zwert(Koord[t])/(smoothNumber+1);
-*/
-				  }
-
-		 for(uint32_t t = 0; t < ingredients.modifyMolecules().size(); t++)
-				  {
-			 ingredients.modifyMolecules()[t].setSmoothCoordinateBetween((smoothNumber/(smoothNumber+1.0f))*ingredients.modifyMolecules()[t].getSmoothCoordinate() - ingredients.modifyMolecules()[t].getSmoothCoordinateBetween()*(1.0f/(smoothNumber+1.0f)));
-/*
-					 SmoothArray_x[t][1] =  SmoothArray_x[t][0] * (smoothNumber/(smoothNumber+1.0f)) - SmoothArray_x[t][1]/(smoothNumber+1);
-					 SmoothArray_y[t][1] =  SmoothArray_y[t][0] * (smoothNumber/(smoothNumber+1.0f)) - SmoothArray_y[t][1]/(smoothNumber+1);
-					 SmoothArray_z[t][1] =  SmoothArray_z[t][0] * (smoothNumber/(smoothNumber+1.0f)) - SmoothArray_z[t][1]/(smoothNumber+1);
-				 */
-				  }
-
-				  }
-
-
-
-				 /* if (periodRB == true)
-				  for(int t = 1; t < monozahl; t++)
-				  {
-
-
-				  if ( Math.abs(SmoothArray_x[t][0]- xwert(Koord[t])) > 20)
-					  SmoothArray_x[t][0]= xwert(Koord[t]);
-
-				  if ( Math.abs(SmoothArray_y[t][0]- ywert(Koord[t])) > 20)
-					  SmoothArray_y[t][0]= ywert(Koord[t]);
-
-				  if ( Math.abs(SmoothArray_z[t][0]- zwert(Koord[t])) > 20)
-					  SmoothArray_z[t][0]= zwert(Koord[t]);
-
-				  }
-				  */
-
-				  for(uint32_t t = 0; t < ingredients.modifyMolecules().size(); t++)
-				  {
-					  ingredients.modifyMolecules()[t].setSmoothCoordinate((smoothNumber/(smoothNumber+1.0f))*ingredients.modifyMolecules()[t].getSmoothCoordinate() + VectorFloat3(ingredients.modifyMolecules()[t].getVector3D())*(1.0f/(smoothNumber+1.0f)));
-
-					 /*SmoothArray_x[t][0] =  SmoothArray_x[t][0] * (smoothNumber/(smoothNumber+1.0f)) + xwert(Koord[t])/(smoothNumber+1);
-					 SmoothArray_y[t][0] =  SmoothArray_y[t][0] * (smoothNumber/(smoothNumber+1.0f)) + ywert(Koord[t])/(smoothNumber+1);
-					 SmoothArray_z[t][0] =  SmoothArray_z[t][0] * (smoothNumber/(smoothNumber+1.0f)) + zwert(Koord[t])/(smoothNumber+1);
-					  */
-				  }
-
-				  if (FrameNumber < ingredients.getMaxNumSmoothingFrame())
-				  {
-
-					  smoothNumber++;
-					  FrameNumber++;
-					  std::cout<<"smoo : "<< smoothNumber << " Fra "<< FrameNumber<<std::endl;
-				  }
+	if (FrameNumber < ingredients.getMaxNumSmoothingFrame())
+	{
+		smoothNumber++;
+		FrameNumber++;
+		//std::cout<<"smoo : "<< smoothNumber << " Fra "<< FrameNumber<<std::endl;
+	}
 }
 
 template <class IngredientsType>
@@ -1256,165 +1137,152 @@ void LeMonADEViewer<IngredientsType>::ch_propertycolorchooser(Fl_Choice* obj, vo
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::ch_propertycolorchooser_i(Fl_Choice* obj)
 {
-	std::cout << "ch_propertycolorchooser_i" << std::endl;
-	std::cout << "State " <<  int(Ch_PropertyColorChoice->value()) << std::endl;
+	//std::cout << "ch_propertycolorchooser_i" << std::endl;
+	//std::cout << "State " <<  int(Ch_PropertyColorChoice->value()) << std::endl;
 
 	int valueCh_PropertyColorChoice = Ch_PropertyColorChoice->value();
 
 	std::string stringCh_PropertyValueChoice = Ch_PropertyValueChoice->text();
 
+	// replace this by a general scheme
 	std::string command = "!setColorAttributes";
-	//std::string line = "!setColorAttributes:"+Ch_PropertyValueChoice->value()+"=";
 
+    std::string line = "!setColorAttributes:"+stringCh_PropertyValueChoice+"=";
 
-	//std::string line = ss.str();
-	std::string line = "!setColorAttributes:"+stringCh_PropertyValueChoice+"=";
+    if(valueCh_PropertyColorChoice == 1)
+    	line += "(1,1,1)";
 
+    if(valueCh_PropertyColorChoice == 2)
+    	line += "(0,0,0)";
 
+    if(valueCh_PropertyColorChoice == 3)
+    	line += "(1,0,0)";
 
-	if(valueCh_PropertyColorChoice == 1)
-		line += "(1,1,1)";
-	if(valueCh_PropertyColorChoice == 2)
-			line += "(0,0,0)";
+    if(valueCh_PropertyColorChoice == 4)
+    	line += "(0,1,0)";
 
-	if(valueCh_PropertyColorChoice == 3)
-				line += "(1,0,0)";
+    if(valueCh_PropertyColorChoice == 5)
+    	line += "(0,0,1)";
 
-	if(valueCh_PropertyColorChoice == 4)
-					line += "(0,1,0)";
+    if(valueCh_PropertyColorChoice == 6)
+    	line += "(1,1,0)";
 
-	if(valueCh_PropertyColorChoice == 5)
-					line += "(0,0,1)";
+    if(valueCh_PropertyColorChoice == 7)
+    	line += "(1,0,1)";
 
-	if(valueCh_PropertyColorChoice == 6)
-					line += "(1,1,0)";
+    if(valueCh_PropertyColorChoice == 8)
+    	line += "(0,1,1)";
 
-	if(valueCh_PropertyColorChoice == 7)
-					line += "(1,0,1)";
-
-	if(valueCh_PropertyColorChoice == 8)
-					line += "(0,1,1)";
-
-	if(valueCh_PropertyColorChoice == 9)
-						line += "(1,0.6,0)";
+    if(valueCh_PropertyColorChoice == 9)
+    	line += "(1,0.6,0)";
 
 
 	std::cout << line << std::endl;
 
+	// execute the coloring
 	if (CommandLineMap.find(command) != CommandLineMap.end())
-	     	{
-			CommandLineMap[command]->executeLineCommand(ingredients, linearGroupsVector, line);
+	{
+		CommandLineMap[command]->executeLineCommand(ingredients, linearGroupsVector, line);
 
-	     	}
-
-	//ingredients.setSubdivisionSpheres(uint8_t(S_DrawSpheresSubdivisionSpinner->value()));
-
-	//winOpenGL->precalculateSphere(ingredients.getSubdivisionSpheres(),ingredients.getSubdivisionSpheres());
-
+	}
 }
 
 
-     template <class IngredientsType>
-     void LeMonADEViewer<IngredientsType>::cb_changeCommandInput( Fl_Input* obj, void* v)
-     {
-     	(( LeMonADEViewer<IngredientsType>* )v)->cb_changeCommandInput_i(obj);
-     }
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::cb_changeCommandInput( Fl_Input* obj, void* v)
+{
+	(( LeMonADEViewer<IngredientsType>* )v)->cb_changeCommandInput_i(obj);
+}
 
-     template <class IngredientsType>
-     void LeMonADEViewer<IngredientsType>::cb_changeCommandInput_i( Fl_Input* obj)
-     {
-    	 //only for !setColor:1-100=(0.87,0.0,0.0
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::cb_changeCommandInput_i( Fl_Input* obj)
+{
 
-     	std::cout << "check smoothing" << std::endl;
-     	std::cout << "State " <<  I_CommandInput->value() << std::endl;
+	std::string line(I_CommandInput->value());
+	std::string command = CommandLineParser.findRead(line);
 
-     	std::string line(I_CommandInput->value());
-     	std::string command = CommandLineParser.findRead(line);
+	std::cout << "command:" << std::endl;
+	std::cout << command << std::endl;
+	std::cout << "line:" << std::endl;
+	std::cout << line << std::endl;
 
-     	std::cout << "command:" << std::endl;
-     	std::cout << command << std::endl;
-     	std::cout << "line:" << std::endl;
-     	std::cout << line << std::endl;
+	std::stringstream sd;
+	sd << std::endl << line << std::endl;
 
-     	std::stringstream sd;
-     	sd << std::endl << line << std::endl;
+	if (CommandLineMap.find(command) != CommandLineMap.end())
+	{
+		T_TextBuffer->append(sd.str().c_str());
+		T_TextBuffer->append((CommandLineMap[command]->executeLineCommand(ingredients, linearGroupsVector, line)).c_str());
+		T_TextBuffer->append("\n");
+	}
+	else{T_TextBuffer->append("command not found\n");}
 
-     	if (CommandLineMap.find(command) != CommandLineMap.end())
-     	{
-     		T_TextBuffer->append(sd.str().c_str());
-     		T_TextBuffer->append((CommandLineMap[command]->executeLineCommand(ingredients, linearGroupsVector, line)).c_str());
+	/*
+	//  maybe useful for animation purpose
+	if(line==std::string("!rendering"))
+	{
+		std::cout << "rendering all frames:" << std::endl;
 
-
-     	}
-     	else{T_TextBuffer->append("command not found\n");}
-
-     	if(line==std::string("!rendering"))
-     	{
-     		std::cout << "rendering all frames:" << std::endl;
-
-     		for (int showFrame = 1; showFrame <= ReadBfmFile.getNumFrames(); showFrame++)
-     		{
-     		    	 		ReadBfmFile.gotoFrame(showFrame);
+		for (int showFrame = 1; showFrame <= ReadBfmFile.getNumFrames(); showFrame++)
+		{
+			ReadBfmFile.gotoFrame(showFrame);
 
 
-     		    			generalPlayFunction();
+			generalPlayFunction();
 
 
-     		    			Fl::remove_timeout(Timer_CB);
-     		    			std::cout << "jump to  Frame" << std::endl;
+			Fl::remove_timeout(Timer_CB);
+			std::cout << "jump to  Frame" << std::endl;
 
-     		std::stringstream FilenamePovray;
-     		uint32_t request_frame = atoi(I_FrameInput->value());
-     		FilenamePovray << cropFilename <<"_"<< setfill('0') << setw(6) << request_frame;
-     		std::cout << FilenamePovray.str() << std::endl;
-     		std::string croppedFilenamePovray = FilenamePovray.str();
+			std::stringstream FilenamePovray;
+			uint32_t request_frame = atoi(I_FrameInput->value());
+			FilenamePovray << cropFilename <<"_"<< setfill('0') << setw(6) << request_frame;
+			std::cout << FilenamePovray.str() << std::endl;
+			std::string croppedFilenamePovray = FilenamePovray.str();
 
-     		winOpenGL->generatePovRayScript(croppedFilenamePovray);
+			winOpenGL->generatePovRayScript(croppedFilenamePovray);
 
-     		std::stringstream povrayCommand;
+			std::stringstream povrayCommand;
 
-     		povrayCommand << "povray +I" << croppedFilenamePovray << ".pov +O" << croppedFilenamePovray << ".png +W";
-     		povrayCommand << winOpenGL->w();
-     		povrayCommand << " +H";
-     		povrayCommand << winOpenGL->h();
-     		povrayCommand << " -D -P ";
-
-
-     		system (povrayCommand.str().c_str());
-		
-     		}
-
-     	}
-     }
+			povrayCommand << "povray +I" << croppedFilenamePovray << ".pov +O" << croppedFilenamePovray << ".png +W";
+			povrayCommand << winOpenGL->w();
+			povrayCommand << " +H";
+			povrayCommand << winOpenGL->h();
+			povrayCommand << " -D -P ";
 
 
+			system (povrayCommand.str().c_str());
 
-     template <class IngredientsType>
-          void LeMonADEViewer<IngredientsType>::cb_changeFrameInput( Fl_Int_Input* obj, void* v)
-          {
-          	(( LeMonADEViewer<IngredientsType>* )v)->cb_changeFrameInput_i(obj);
-          }
+		}
 
-     template <class IngredientsType>
-     void LeMonADEViewer<IngredientsType>::cb_changeFrameInput_i( Fl_Int_Input* obj)
-          {
-         	 //only for !setColor:1-100=(0.87,0.0,0.0
+	}
+	*/
+}
 
-    	 	 uint32_t request_frame = atoi(I_FrameInput->value());
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::cb_changeFrameInput( Fl_Int_Input* obj, void* v)
+{
+	(( LeMonADEViewer<IngredientsType>* )v)->cb_changeFrameInput_i(obj);
+}
 
-    	 	 std::cout << "requested Frame" <<request_frame  << "  vs.  " << I_FrameInput->value() << std::endl;
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::cb_changeFrameInput_i( Fl_Int_Input* obj)
+{
 
-    	 	 if((request_frame > 0) && (request_frame <= ReadBfmFile.getNumFrames()))
-    	 	 {
-    	 		ReadBfmFile.gotoFrame(request_frame);
-    	 	 }
+	uint32_t request_frame = atoi(I_FrameInput->value());
 
-    			generalPlayFunction();
+	//std::cout << "requested Frame" <<request_frame  << "  vs.  " << I_FrameInput->value() << std::endl;
 
+	if((request_frame > 0) && (request_frame <= ReadBfmFile.getNumFrames()))
+	{
+		ReadBfmFile.gotoFrame(request_frame);
+	}
 
-    			Fl::remove_timeout(Timer_CB);
-    			std::cout << "jump to  Frame" << std::endl;
-    	}
+	generalPlayFunction();
+
+	Fl::remove_timeout(Timer_CB);
+	//std::cout << "jump to  Frame" << std::endl;
+}
 
 
 
