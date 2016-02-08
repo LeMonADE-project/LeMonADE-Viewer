@@ -48,6 +48,79 @@ For further details of LeMonADE-project see: [LeMonADE-project]
     cd build/
     ./LeMonADE-Viewer ../test.bfm
 ````
+## Troubleshooting
+
+* Problem: Build fails with linker error:
+
+````sh
+	/usr/bin/ld: cannot find -lLeMonADE
+````
+  Solution: 
+  LeMonADE is not properly installed, or the option -DLEMONADE_DIR was set incorrectly.
+  (a) Install the LeMonADE library to a default system path
+  (b) Install the LeMonADE library to a custom path and hand this path 
+      to the configure script, or cmake, depending on your choice of build method
+
+````sh
+	./configure -DLEMONADE_DIR=/custom/install/path/to/LeMonADE
+	make
+````
+  For installation instructions to the LeMonADE library see https://github.com/LeMonADE-project/LeMonADE
+
+
+* Problem: On Ubuntu (tested with Ubuntu 14.04), build fails with linker error:
+
+````sh
+	/usr/bin/ld: undefined reference to symbol 'dlsym@@GLIBC_2.2.5'
+````
+  Solution: Add the following to src/LeMonADE-Viewer/CMakeLists.txt:
+  Original line:
+````sh
+	target_link_libraries(${APPLICATION_NAME} ${OPENGL_LIBRARIES} ${FLTK_LIBRARIES} Camera LineParser LeMonADE)
+````
+
+  Changed line:
+````sh
+	target_link_libraries(${APPLICATION_NAME} ${OPENGL_LIBRARIES} ${FLTK_LIBRARIES} Camera LineParser LeMonADE dl)
+````
+
+
+  Then, re-run the build instructions.
+  
+* Problem: On Ubuntu (tested with Ubuntu 14.04), build fails with linker error:
+
+````sh
+	/usr/bin/ld: cannot find -lpng
+````
+  Solution: Install development package for libpng12
+  
+````sh
+	sudo apt-get install libpng12-dev
+````  
+
+* Problem: On Ubuntu (tested with Ubuntu 14.04), build fails with linker error:
+
+````sh
+	/usr/bin/ld: cannot find -lz
+````
+  Solution: Install development package for zlib1g
+  
+````sh
+	sudo apt-get install zlib1g-dev
+````  
+
+* Problem: On Ubuntu (tested with Ubuntu 14.04), build fails with linker error:
+
+````sh
+	/usr/bin/ld: cannot find -lSOME_LIBRARY_NAME
+````
+  where SOME_LIBRARY_NAME one of (jpeg,Xft,fontconfig,Xinerama)
+  
+  Solution: Install development package for libSOME_LIBRARY_NAME
+  
+````sh
+	sudo apt-get install libSOME_LIBRARY_NAME-dev
+````
 
 
 ## License

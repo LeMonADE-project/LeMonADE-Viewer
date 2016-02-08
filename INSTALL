@@ -23,6 +23,14 @@
  cmake -DLEMONADE_DIR=/path/to/LeMonADE/ ..
  make
  
+ ----------------------------------------------------
+ The option -DLEMONADE_DIR is necessary only if the 
+ LeMonADE library was installed to a non standard 
+ location. 
+ See https://github.com/LeMonADE-project/LeMonADE
+ for instructions on installing LeMonADE library.
+ ----------------------------------------------------
+ 
  #after successful build
  # rendering a test-bfm-file
  cd build/
@@ -43,6 +51,14 @@
  cd build
  cmake -DLEMONADE_DIR=/path/to/LeMonADE/ ..
  make
+ 
+  ----------------------------------------------------
+ The option -DLEMONADE_DIR is necessary only if the 
+ LeMonADE library was installed to a non standard 
+ location. 
+ See https://github.com/LeMonADE-project/LeMonADE
+ for instructions on installing LeMonADE library.
+ ----------------------------------------------------
  
  #after successful build
  # rendering a test-bfm-file
