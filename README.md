@@ -48,6 +48,9 @@ For further details of LeMonADE-project see: [LeMonADE-project]
     cd build/
     ./LeMonADE-Viewer ../test.bfm
 ````
+## Troubleshooting
+
+* see INSTALL for solution of known issues
 
 
 ## License
