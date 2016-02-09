@@ -49,7 +49,7 @@ SET (CMAKE_VERBOSE_MAKEFILE 0) # Use 1 for debugging, 0 for release
 # Check if LEMONADE_DIR is given
 #
 if (DEFINED LEMONADE_DIR)
-	message("LEMONADE_DIR set to "${LEMONADE_DIR})
+	message("LEMONADE_DIR set to " ${LEMONADE_DIR})
 else()
     message( WARNING "LEMONADE_DIR no set! If the LeMonADE library was installed to a custom directory, use -DLEMONADE_DIR=/path/to/LeMonADE/ to set the correct search path")
 endif()
