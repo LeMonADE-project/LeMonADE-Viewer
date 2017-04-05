@@ -498,7 +498,7 @@ void initialize(){
 
 	// fill the groups with connected structures by an functor
 	// fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>(&(this->ingredients.getMolecules())),alwaysTrue() );
-	fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>(&(this->ingredients.getMolecules())),belongsToLinearStrand() );
+	fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>((this->ingredients.getMolecules())),belongsToLinearStrand() );
 
 	// create the OpenGL window
 	winOpenGL= new LeMonADEOpenGL<IngredientsType>(ingredients, linearGroupsVector, 400,25,800,800, "LeMonADE-Viewer OpenGL");
