@@ -10,3 +10,10 @@
 * Release-1.2.1
 - adding command "!setColor:BG=(r,g,b)" for changing background color
 - code refactoring
+
+* Release-1.2.2
+- code refactoring
+
+* Release-1.2.3
+- code refactoring for LeMonADE v2.0.0
+
