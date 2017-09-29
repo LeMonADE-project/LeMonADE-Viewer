@@ -216,7 +216,7 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 		//afile << "rotate  <" << -cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
 		afile << "rotate  <" << cam.getCamAnglePitch() << ", 0 , 0 > "<< std::endl;
 
-		afile << "// translate <" << 0.5*boxX  <<" , " << 0.5*boxY <<" , " << 0.5*boxZ << ">" << std::endl;
+		afile << "translate <" << 0.5*boxX  <<" , " << 0.5*boxY <<" , " << 0.5*boxZ << ">" << std::endl;
 
 	//afile << "rotate  < -90, 0, 0 >" << std::std::endl;
 	//	afile << "rotate  < 0, 0, " << -cam.getCamPhiRot() << " >" << std::std::endl;

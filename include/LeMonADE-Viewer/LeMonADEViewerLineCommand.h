@@ -33,6 +33,15 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 #include <sstream>
+#include <algorithm>    // std::find_if
+#include <iostream>
+#include <string>
+#include <map>
+#include <utility>
+#include <functional>
+#include <queue>
+#include <vector>
+#include <math.h>
 
 #include <LeMonADE/utility/RandomNumberGenerators.h>
 
@@ -380,6 +389,330 @@ public:
 	}
 };
 
+
+
+
+template<class IngredientsType, class MoleculesType>
+class CommandSetColorTopology : public LineCommandBase<IngredientsType, MoleculesType>
+{
+public:
+	virtual ~CommandSetColorTopology(){};
+    
+    typedef uint32_t NodeIdx;
+    typedef std::map<NodeIdx, int> Nodelist;
+    typedef std::map<NodeIdx, Nodelist> Graph;
+    //typedef std::pair<NodeIdx, Nodelist> Node;
+    typedef std::pair<int, NodeIdx> Edge; //! (tentative distance, idxNode)
+    typedef std::vector<NodeIdx> NodeVector;
+
+    void dijkstra(Graph &graph, NodeIdx source, Nodelist &distance);
+
+    void findCentersOfTree(Graph &graph,  Nodelist degreeNodes, NodeVector &centerNodes);
+
+	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
+	{
+		//std::cout << "!SetColor in CommandSetColorLinks " << std::endl;
+		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
+
+		//command has 3 tokens
+		if(vex.size() !=3 )
+			return std::string("error in command !setColorTopology");
+
+        //get color information
+		std::vector<std::string> colorStart = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[1], '(', ',' , ')');
+		
+        if(colorStart.size() !=3 )
+			return std::string("error in command !setColorTopology:color");
+
+		float redStart = 0.0f;
+		float greenStart = 0.0f;
+		float blueStart = 0.0f;
+
+		std::istringstream ccRedStart(colorStart[0]);
+		ccRedStart >> redStart;
+
+		//first mono index is wrong
+		if(ccRedStart.fail()){
+			return std::string("error in command !setColorTopology:red color Start");
+		}
+
+		std::istringstream ccGreenStart(colorStart[1]);
+		ccGreenStart >> greenStart;
+
+		//first mono index is wrong
+		if(ccGreenStart.fail()){
+			return std::string("error in command !setColorTopology:green color Start");
+		}
+
+		std::istringstream ccBlueStart(colorStart[2]);
+		ccBlueStart >> blueStart;
+
+		//first mono index is wrong
+		if(ccBlueStart.fail()){
+			return std::string("error in command !setColorTopology:blue color Start");
+		}
+		
+
+		//get color information
+		std::vector<std::string> colorEnd = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
+
+		if(colorEnd.size() !=3 )
+			return std::string("error in command !setColorTopology:color");
+
+		float redEnd = 0.0f;
+		float greenEnd = 0.0f;
+		float blueEnd = 0.0f;
+
+		std::istringstream ccRedEnd(colorEnd[0]);
+		ccRedEnd >> redEnd;
+
+		//first mono index is wrong
+		if(ccRedEnd.fail()){
+			return std::string("error in command !setColorTopology:red color End");
+		}
+
+		std::istringstream ccGreenEnd(colorEnd[1]);
+		ccGreenEnd >> greenEnd;
+
+		//first mono index is wrong
+		if(ccGreenEnd.fail()){
+			return std::string("error in command !setColorTopology:green color End");
+		}
+
+		std::istringstream ccBlueEnd(colorEnd[2]);
+		ccBlueEnd >> blueEnd;
+
+		//first mono index is wrong
+		if(ccBlueEnd.fail()){
+			return std::string("error in command !setColorTopology:blue color End");
+		}
+
+		//color all monomers
+
+
+		/*for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+		{
+			if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
+				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
+		}*/
+		
+		Graph treeGraph;
+
+
+	Nodelist  degreeNode; // Degree of node
+
+	for (int k= 0; k < ingredients.getMolecules().size(); k++)
+			{
+				for (int l = 0; l < ingredients.getMolecules().getNumLinks(k); l++)
+				{
+						// connect from idxAA to idxBB with value ZZ
+						// all (symmetric) connections
+						treeGraph[k][ingredients.getMolecules().getNeighborIdx(k, l)]=1;
+
+				}
+				// fill with degree of nodes
+				degreeNode[k]=ingredients.getMolecules().getNumLinks(k);
+			}
+
+
+	//finding the center of the tree (either one or two)
+	NodeVector centerNodes;
+	findCentersOfTree(treeGraph, degreeNode, centerNodes);
+
+	//calculate the topological distance of center to all nodes and fill histogram
+	NodeVector::iterator itv;
+	for(itv=centerNodes.begin(); itv!=centerNodes.end(); ++itv){
+
+		
+
+	        NodeIdx startNode = (*itv);
+	        std::cout << std::endl << "startNode: " << startNode << std::endl;
+
+            // idx -> distance from center
+	        Nodelist topo_distance;
+	        dijkstra(treeGraph, startNode, topo_distance);
+
+	        std::cout << "startNode -> node => distance" <<std::endl;
+            
+            int maxTopologicalDistance = 0;
+
+	       	  Nodelist::iterator it;
+	       	  for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
+
+	       		 // std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
+
+                  //find the maximum topological distance from the tree center
+                  if(maxTopologicalDistance < it->second)
+                      maxTopologicalDistance=it->second;
+              }
+              std::cout<< startNode << " -> max topological distance " << maxTopologicalDistance <<std::endl;
+              
+              //color the structure
+              for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
+
+	       		//  std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
+
+                  // red part
+                  double redFraction = redStart + (redEnd-redStart)*it->second/(1.0*maxTopologicalDistance);
+                  
+                  // green part
+                  double greenFraction = greenStart + (greenEnd-greenStart)*it->second/(1.0*maxTopologicalDistance);
+                  
+                  // blue part
+                  double blueFraction = blueStart + (blueEnd-blueStart)*it->second/(1.0*maxTopologicalDistance);
+                  
+                  
+                  ingredients.modifyMolecules()[it->first].setColor( redFraction ,greenFraction , blueFraction);
+              }
+    
+	       	  
+	      }
+		
+
+		return std::string("apply color to all monomers with numTopology");
+	}
+};
+
+template<class IngredientsType, class MoleculesType>
+void CommandSetColorTopology<IngredientsType, MoleculesType>::findCentersOfTree(Graph &graph, Nodelist degreeNodes, NodeVector &centerNodes){
+
+	std::queue <NodeIdx> queueLeaves; // Queue for algorithm holding (reduced) leaves
+	std::queue <NodeIdx> queueNextLeaves; // Queue for algorithm holding next (reduced) leaves
+	std::queue <NodeIdx> tmpOldLeaves; // Queue for algorithm holding (reduced) leaves
+
+	// Fill and start from leaves
+
+	Nodelist::iterator it;
+	for(it=degreeNodes.begin(); it!=degreeNodes.end(); ++it)
+	{
+	        int degreeOfNode = it->second;
+	        NodeIdx labelNode = it->first;
+
+	        if (degreeOfNode == 1)
+	        {
+	        	queueLeaves.push(labelNode);
+	        }
+	}
+
+	NodeIdx Seperator = -1;
+
+	queueLeaves.push(Seperator);
+
+	//  while ( (queueLeaves.front()!=Seperator)||(queueLeaves.size() > 2) ) {
+	while ( (queueLeaves.size() > 0) ) {
+		  NodeIdx node = queueLeaves.front();
+		  queueLeaves.pop();
+
+		  if( node == Seperator)
+		  {
+			  if(queueNextLeaves.empty())
+				  break;
+
+			 // std::cout << "next iteration: " << node << std::endl;
+			  tmpOldLeaves = queueNextLeaves;
+			  queueLeaves = queueNextLeaves;
+
+			  if(queueNextLeaves.size() >0)
+				  queueLeaves.push(Seperator);
+
+			  queueNextLeaves=std::queue <NodeIdx>();
+
+			  continue;
+		  }
+
+
+	 	      int dN_old = degreeNodes[node];
+
+	 	      degreeNodes[node]--;
+
+	 	     // new subgraph of all neighbors
+	 	     Nodelist tempgraph=graph[node];
+
+	 	     // connected nodes
+
+	 	    // std::cout << "connected nodes from: " << node << std::endl;
+
+	 	     Nodelist::iterator it;
+	 	     for(it=tempgraph.begin(); it!=tempgraph.end(); ++it){
+
+	 	    //	std::cout << it->first << " with degree: " << degreeNodes[it->first];
+
+	 	    	 if(degreeNodes[it->first] > 0)
+	 	    	 {
+	 	    		degreeNodes[it->first]--;
+
+	 	    	//	std::cout << " reduced to degree: " << degreeNodes[it->first];
+	 	    	 }
+
+	 	    	 if(degreeNodes[it->first] == 1)
+	 	    	 {
+	 	    		//queueLeaves.push(it->first);
+	 	    		queueNextLeaves.push(it->first);
+
+	 	    	//	std::cout << " added to queue the idx: " << (it->first);
+	 	    	 }
+
+	 	    	//std::cout << std::endl;
+	 	     }
+
+
+	 	  }
+
+	std::cout << "center queue contains: ";
+		  while (!tmpOldLeaves.empty())
+		  {
+			  centerNodes.push_back(tmpOldLeaves.front());
+			  std::cout << ' ' <<  tmpOldLeaves.front();
+			  tmpOldLeaves.pop();
+		  }
+		  std::cout << '\n';
+}
+
+template<class IngredientsType, class MoleculesType>
+void CommandSetColorTopology<IngredientsType, MoleculesType>::dijkstra(Graph &graph, NodeIdx source, Nodelist &distance){
+
+	distance.clear(); //! clear all tentative distance information
+
+	//! list of all nodes to be visit and addressed already with least distance on top
+  std::priority_queue<Edge, std::vector<Edge>, std::greater<Edge> > queueNode;
+
+  // starting node with tentative distance=0, starting node = source
+  queueNode.push( Edge(0, source) );
+
+  while(!queueNode.empty()){
+
+	  //get the element with least tentative distance
+    Edge tmped=queueNode.top();
+
+    // access the node index
+    NodeIdx tmpnl=tmped.second;
+
+    // removes the top element
+    queueNode.pop();
+
+    // if the node never visited before
+    if(distance.count(tmpnl)==0){
+
+    	// tentative distance to the recent node
+      int dist=tmped.first;
+
+      // set the tentative distance to the node
+      distance[tmpnl]=dist;
+
+      // new subgraph of all neighbors
+      Nodelist tempgraph=graph[tmpnl];
+
+      Nodelist::iterator it;
+      for(it=tempgraph.begin(); it!=tempgraph.end(); ++it){
+        int distint=it->second;
+        NodeIdx distlabel=it->first;
+        queueNode.push(Edge(dist+distint, distlabel));
+      }
+
+    }
+  }
+
+}
 
 template<class IngredientsType, class MoleculesType>
 class CommandSetVisible : public LineCommandBase<IngredientsType, MoleculesType>
@@ -1102,12 +1435,13 @@ public:
 		return std::string("known commands:\n"
 				"!setColor:idx1-idx2=(r,g,b)\n"
 				"!setColor:all=(r,g,b)\n"
+                "!setColor:BG=(r,g,b)\n"
 				"!setColorAttributes:att=(r,g,b)\n"
 				"!setColorLinks:numLinks=(r,g,b)\n"
 				"!setColorVisibility:vis=(r,g,b)\n"
 				"!setColorGroups:idxGroup=(r,g,b)\n"
 				"!setColorGroupsRandom\n"
-				"!setColor:BG=(r,g,b)\n"
+                "!setColorTopology:(rS,gS,bS)=(rE,gE,bE)\n"
 				"!setVisible:idx1-idx2=vis\n"
 				"!setVisible:all=vis\n"
 				"!setVisibleAttributes:att=vis\n"
