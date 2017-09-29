@@ -438,7 +438,7 @@ void initialize(){
 		T_TextBuffer = new Fl_Text_Buffer();
 		T_TextDisplay = new Fl_Text_Display(25, 355+35, 250, 110);
 		T_TextDisplay->buffer(T_TextBuffer);
-		T_TextDisplay->wrap_mode( Fl_Text_Display::WRAP_AT_BOUNDS,0);
+		T_TextDisplay->wrap_mode( Fl_Text_Display::WRAP_NONE,0);
 
 
 		I_CommandInput = new Fl_Input(25, 492+35, 250, 43, "command:");
@@ -446,12 +446,13 @@ void initialize(){
 
 		I_CommandInput->tooltip("!setColor:idxMono1-idxMono2=(red,green,blue)\n"
 				"!setColor:all=(red,green,blue)\n"
+                "!setColor:BG=(red,green,blue)\n"
 				"!setColorAttributes:att=(red,green,blue)\n"
 				"!setColorLinks:numLinks=(red,green,blue)\n"
 				"!setColorVisibility:vis=(red,green,blue)\n"
 				"!setColorGroups:idxGroup=(red,green,blue)\n"
 				"!setColorGroupsRandom\n"
-				"!setColor:BG=(red,green,blue)\n"
+                "!setColorTopology:(redCenter,greenCenter,blueCenter)=(redEnd,greenEnd,blueEnd)\n"
 				"!setVisible:idxMono1-idxMono2=vis\n"
 				"!setVisible:all=vis\n"
 				"!setVisibleAttributes:att=vis\n"
@@ -517,7 +518,8 @@ void initialize(){
 	CommandLineMap["!setColor"] = new CommandSetColor<IngredientsType, MonomerGroupVector>();
 	CommandLineMap["!setColorAttributes"] = new CommandSetColorAttributes<IngredientsType, MonomerGroupVector>();
 	CommandLineMap["!setColorLinks"] = new CommandSetColorLinks<IngredientsType, MonomerGroupVector>();
-
+    CommandLineMap["!setColorTopology"] = new CommandSetColorTopology<IngredientsType, MonomerGroupVector>();
+    
 	CommandLineMap["!setVisibleAttributes"] = new CommandSetVisibleAttributes<IngredientsType, MonomerGroupVector>();
 	CommandLineMap["!setVisibleLinks"] = new CommandSetVisibleLinks<IngredientsType, MonomerGroupVector>();
 	CommandLineMap["!setVisible"] = new CommandSetVisible<IngredientsType, MonomerGroupVector>();
@@ -536,6 +538,7 @@ void initialize(){
 
 	// message in the info box
 	std::stringstream startMessage;
+    startMessage << "file: " << cropFilename << std::endl;
 	startMessage << "box (" << ingredients.getBoxX() << ", " << ingredients.getBoxY() << "," << ingredients.getBoxZ() <<")" << std::endl;
 	startMessage << "periodic (" << (ingredients.isPeriodicX()?"true":"false") << ", " << (ingredients.isPeriodicY()?"true":"false") << "," << (ingredients.isPeriodicZ()?"true":"false") <<")" << std::endl;
 	startMessage << "number monomers = " << ingredients.getMolecules().size()<< std::endl;
