@@ -93,11 +93,11 @@ const std::string LeMonADEViewerAboutWin::getText() const
 
 	std::string msg=
 
-			"This is the application LeMonADE-Viewer V1.2.1.\n"
+			"This is the application LeMonADE-Viewer V1.2.4.\n"
 			"==============================================="
 			"\n"
 			"The abbreviation \"LeMonADE\" stands for \n"
-			"\"*L*attice-based *e*xtensible *Mon*te-Carlo *A*lgorithm and *D*evelopment *E*nvironment\"\n"
+			"\"*L*attice-based *e*xtensible *Mon*te Carlo *A*lgorithm and *D*evelopment *E*nvironment\"\n"
 			"and \"Viewer\" refers to the visualization module.\n"
 			"\n"
 			"The aim of the application LeMonaDE-Viewer is to provide a simplistic visualization tool\n"
