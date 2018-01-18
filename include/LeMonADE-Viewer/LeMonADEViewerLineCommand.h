@@ -34,6 +34,8 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <sstream>
 #include <algorithm>    // std::find_if
+#include <cstddef>      // NULL
+#include <cstdlib>      // std::strtod
 #include <iostream>
 #include <string>
 #include <map>
@@ -54,7 +56,7 @@ public:
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& str)=0;
 
-	std::vector<std::string> tokenize1Parameter(const std::string& str,
+	static std::vector<std::string> tokenize1Parameter(const std::string& str,
 			char delim) {
 		std::vector<std::string> tokens;
 		std::stringstream mySstream(str);
@@ -68,7 +70,7 @@ public:
 
 	}
 
-	std::vector<std::string> tokenize2Parameter(const std::string& str,	char delim1, char delim2) {
+	static std::vector<std::string> tokenize2Parameter(const std::string& str,	char delim1, char delim2) {
 		std::vector<std::string> tokens;
 		std::stringstream mySstream(str);
 		std::string temp;
@@ -92,7 +94,7 @@ public:
 
 	}
 
-	std::vector<std::string> tokenize3Parameter(const std::string& str,
+	static std::vector<std::string> tokenize3Parameter(const std::string& str,
 			char delim1, char delim2, char delim3) {
 		std::vector<std::string> tokens;
 		std::stringstream mySstream(str);
@@ -117,6 +119,79 @@ public:
 
 	}
 };
+
+int readColor
+(
+    std::string const & sr,
+    float     * const   r ,
+    float     * const   g ,
+    float     * const   b ,
+    std::string const & sCallingCommand = ""
+)
+{
+    /* @todo tokenize3Parameter could be a standalone function, the template parameters are not even needed ...! */
+    std::vector< std::string >  sColors = LineCommandBase<int,int>::tokenize3Parameter( sr, '(', ',' , ')' );
+
+    unsigned int const nChannels = 3;
+    if ( sColors.size() != nChannels )
+    {
+        std::stringstream msg;
+        msg << "Error ";
+        if ( ! sCallingCommand.empty() )
+            msg << "in command '" << sCallingCommand << "' ";
+        msg << "when reading the color in rgb(x,x,x) format. ";
+        msg << "Expected exactly " << nChannels << " colors, but got " << sColors.size() << "!";
+        std::cerr << msg.str() << "\n";
+        return 1;
+    }
+
+    /* convert strings to floats (failed colors are set to 0 by strtod) */
+    char * eos = NULL;
+    unsigned int failedReads = 0;
+    float * c[] = { r,g,b };
+    for ( unsigned int i = 0; i < nChannels; ++i )
+    {
+        *c[i] = strtod( sColors[i].c_str(), &eos );
+        failedReads |= ( eos == sColors[i] ) << i;
+    }
+    if ( failedReads )
+    {
+        std::stringstream msg;
+        msg << "Error ";
+        if ( ! sCallingCommand.empty() )
+            msg << "in command '" << sCallingCommand << "' ";
+        msg << "when reading the color: ";
+        if ( failedReads & ( 1 << 0 ) ) msg << "red"  ;
+        if ( failedReads & ( 1 << 1 ) ) msg << "green";
+        if ( failedReads & ( 1 << 2 ) ) msg << "blue" ;
+        msg << "!";
+        std::cerr << msg.str() << "\n";
+        return 2;
+    }
+
+    /* check for correct ranges */
+    if ( *r > 1 || *g > 1 || *b > 1 )
+    {
+        *r /= 255;
+        *g /= 255;
+        *b /= 255;
+    }
+    if ( ! ( 0 <= *r && *r <= 1 && 0 <= *g && *g <= 1 && 0 <= *b && *b <= 1 ) )
+    {
+        std::stringstream msg;
+        msg << "Error ";
+        if ( ! sCallingCommand.empty() )
+            msg << "in command '" << sCallingCommand << "' ";
+        msg << "when reading the color in rgb(x,x,x) format. "
+            << "Colors must be either in range [0,1] or [0,255]. "
+            << "The latter gets automatically downscaled to [0,1]. "
+            << "But the input received is: (" << *r << "," << *g << "," << *b << ")";
+        std::cerr << msg.str() << "\n";
+        return 3;
+    }
+
+    return 0;
+}
 
 // handles
 // !setColor:idx1-idx2=(r,g,b)
@@ -144,40 +219,8 @@ public:
 		if((mono.size() ==0) || (mono.size() > 2) )
 			return std::string("error in command !setColor:monomerindex");
 
-		//get color information
-		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
-
-		if(color.size() !=3 )
-			return std::string("error in command !setColor:color");
-
-
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
-
-		std::istringstream ccRed(color[0]);
-		ccRed >> red;
-
-		//first mono index is wrong
-		if(ccRed.fail()){
-			return std::string("error in command !setColor:red color");
-		}
-
-		std::istringstream ccGreen(color[1]);
-		ccGreen >> green;
-
-		//first mono index is wrong
-		if(ccGreen.fail()){
-			return std::string("error in command !setColor:green color");
-		}
-
-		std::istringstream ccBlue(color[2]);
-		ccBlue >> blue;
-
-		//first mono index is wrong
-		if(ccBlue.fail()){
-			return std::string("error in command !setColor:blue color");
-		}
+        float red, green, blue;
+        readColor( vex[2], &red, &green, &blue, "!setColor" );
 
 		//color all monomers
 		if(mono.size()==1 && (!mono[0].compare("all")))
@@ -273,39 +316,8 @@ public:
 			return std::string("error in command !setColorAttributes: attribute");
 		}
 
-		//get color information
-		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
-
-		if(color.size() !=3 )
-			return std::string("error in command !setColorAttributes:color");
-
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
-
-		std::istringstream ccRed(color[0]);
-		ccRed >> red;
-
-		//first mono index is wrong
-		if(ccRed.fail()){
-			return std::string("error in command !setColorAttributes:red color");
-		}
-
-		std::istringstream ccGreen(color[1]);
-		ccGreen >> green;
-
-		//first mono index is wrong
-		if(ccGreen.fail()){
-			return std::string("error in command !setColorAttributes:green color");
-		}
-
-		std::istringstream ccBlue(color[2]);
-		ccBlue >> blue;
-
-		//first mono index is wrong
-		if(ccBlue.fail()){
-			return std::string("error in command !setColorAttributes:blue color");
-		}
+        float red, green, blue;
+        readColor( vex[2], &red, &green, &blue, "!setColorAttributes" );
 
 		//color all monomers
 		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
@@ -342,39 +354,8 @@ public:
 			return std::string("error in command !setColorLinks: numLinks");
 		}
 
-		//get color information
-		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
-
-		if(color.size() !=3 )
-			return std::string("error in command !setColorLinks:color");
-
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
-
-		std::istringstream ccRed(color[0]);
-		ccRed >> red;
-
-		//first mono index is wrong
-		if(ccRed.fail()){
-			return std::string("error in command !setColorLinks:red color");
-		}
-
-		std::istringstream ccGreen(color[1]);
-		ccGreen >> green;
-
-		//first mono index is wrong
-		if(ccGreen.fail()){
-			return std::string("error in command !setColorLinks:green color");
-		}
-
-		std::istringstream ccBlue(color[2]);
-		ccBlue >> blue;
-
-		//first mono index is wrong
-		if(ccBlue.fail()){
-			return std::string("error in command !setColorLinks:blue color");
-		}
+        float red, green, blue;
+        readColor( vex[2], &red, &green, &blue, "!setColorLinks" );
 
 		//color all monomers
 
@@ -397,7 +378,7 @@ class CommandSetColorTopology : public LineCommandBase<IngredientsType, Molecule
 {
 public:
 	virtual ~CommandSetColorTopology(){};
-    
+
     typedef uint32_t NodeIdx;
     typedef std::map<NodeIdx, int> Nodelist;
     typedef std::map<NodeIdx, Nodelist> Graph;
@@ -418,84 +399,18 @@ public:
 		if(vex.size() !=3 )
 			return std::string("error in command !setColorTopology");
 
-        //get color information
-		std::vector<std::string> colorStart = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[1], '(', ',' , ')');
-		
-        if(colorStart.size() !=3 )
-			return std::string("error in command !setColorTopology:color");
-
-		float redStart = 0.0f;
-		float greenStart = 0.0f;
-		float blueStart = 0.0f;
-
-		std::istringstream ccRedStart(colorStart[0]);
-		ccRedStart >> redStart;
-
-		//first mono index is wrong
-		if(ccRedStart.fail()){
-			return std::string("error in command !setColorTopology:red color Start");
-		}
-
-		std::istringstream ccGreenStart(colorStart[1]);
-		ccGreenStart >> greenStart;
-
-		//first mono index is wrong
-		if(ccGreenStart.fail()){
-			return std::string("error in command !setColorTopology:green color Start");
-		}
-
-		std::istringstream ccBlueStart(colorStart[2]);
-		ccBlueStart >> blueStart;
-
-		//first mono index is wrong
-		if(ccBlueStart.fail()){
-			return std::string("error in command !setColorTopology:blue color Start");
-		}
-		
-
-		//get color information
-		std::vector<std::string> colorEnd = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
-
-		if(colorEnd.size() !=3 )
-			return std::string("error in command !setColorTopology:color");
-
-		float redEnd = 0.0f;
-		float greenEnd = 0.0f;
-		float blueEnd = 0.0f;
-
-		std::istringstream ccRedEnd(colorEnd[0]);
-		ccRedEnd >> redEnd;
-
-		//first mono index is wrong
-		if(ccRedEnd.fail()){
-			return std::string("error in command !setColorTopology:red color End");
-		}
-
-		std::istringstream ccGreenEnd(colorEnd[1]);
-		ccGreenEnd >> greenEnd;
-
-		//first mono index is wrong
-		if(ccGreenEnd.fail()){
-			return std::string("error in command !setColorTopology:green color End");
-		}
-
-		std::istringstream ccBlueEnd(colorEnd[2]);
-		ccBlueEnd >> blueEnd;
-
-		//first mono index is wrong
-		if(ccBlueEnd.fail()){
-			return std::string("error in command !setColorTopology:blue color End");
-		}
+        float redStart, greenStart, blueStart;
+        readColor( vex[1], &redStart, &greenStart, &blueStart, "!setColorTopology (start)" );
+        float redEnd, greenEnd, blueEnd;
+        readColor( vex[2], &redEnd, &greenEnd, &blueEnd, "!setColorTopology (end)" );
 
 		//color all monomers
-
-
 		/*for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
 		{
 			if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
 				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
 		}*/
-		
+
 		Graph treeGraph;
 
 
@@ -523,7 +438,7 @@ public:
 	NodeVector::iterator itv;
 	for(itv=centerNodes.begin(); itv!=centerNodes.end(); ++itv){
 
-		
+
 
 	        NodeIdx startNode = (*itv);
 	        std::cout << std::endl << "startNode: " << startNode << std::endl;
@@ -533,7 +448,7 @@ public:
 	        dijkstra(treeGraph, startNode, topo_distance);
 
 	        std::cout << "startNode -> node => distance" <<std::endl;
-            
+
             int maxTopologicalDistance = 0;
 
 	       	  Nodelist::iterator it;
@@ -546,7 +461,7 @@ public:
                       maxTopologicalDistance=it->second;
               }
               std::cout<< startNode << " -> max topological distance " << maxTopologicalDistance <<std::endl;
-              
+
               //color the structure
               for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
 
@@ -554,20 +469,20 @@ public:
 
                   // red part
                   double redFraction = redStart + (redEnd-redStart)*it->second/(1.0*maxTopologicalDistance);
-                  
+
                   // green part
                   double greenFraction = greenStart + (greenEnd-greenStart)*it->second/(1.0*maxTopologicalDistance);
-                  
+
                   // blue part
                   double blueFraction = blueStart + (blueEnd-blueStart)*it->second/(1.0*maxTopologicalDistance);
-                  
-                  
+
+
                   ingredients.modifyMolecules()[it->first].setColor( redFraction ,greenFraction , blueFraction);
               }
-    
-	       	  
+
+
 	      }
-		
+
 
 		return std::string("apply color to all monomers with numTopology");
 	}
@@ -918,41 +833,8 @@ public:
 		if(ccVis.fail()){
 			return std::string("error in command !setColorVisibility: Visibility");
 		}
-
-		//get color information
-		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
-
-		if(color.size() !=3 )
-			return std::string("error in command !setColorVisibility: Color");
-
-
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
-
-		std::istringstream ccRed(color[0]);
-		ccRed >> red;
-
-		//first mono index is wrong
-		if(ccRed.fail()){
-			return std::string("error in command !setColorVisibility:red color");
-		}
-
-		std::istringstream ccGreen(color[1]);
-		ccGreen >> green;
-
-		//first mono index is wrong
-		if(ccGreen.fail()){
-			return std::string("error in command !setColorVisibility:green color");
-		}
-
-		std::istringstream ccBlue(color[2]);
-		ccBlue >> blue;
-
-		//first mono index is wrong
-		if(ccBlue.fail()){
-			return std::string("error in command !setColorVisibility:blue color");
-		}
+        float red, green, blue;
+        readColor( vex[2], &red, &green, &blue, "!setColorVisibility" );
 
 
 		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
@@ -1076,43 +958,8 @@ public:
 		{
 			return std::string("error in command !setColorGroups: Groups exceed range");
 		}
-
-		//get color information
-		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
-
-		if(color.size() !=3 )
-			return std::string("error in command !setColorGroups:color");
-
-
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
-
-		std::istringstream ccRed(color[0]);
-		ccRed >> red;
-
-		//first mono index is wrong
-		if(ccRed.fail()){
-			return std::string("error in command !setColorGroups:red color");
-		}
-
-		std::istringstream ccGreen(color[1]);
-		ccGreen >> green;
-
-		//first mono index is wrong
-		if(ccGreen.fail()){
-			return std::string("error in command !setColorGroups:green color");
-		}
-
-		std::istringstream ccBlue(color[2]);
-		ccBlue >> blue;
-
-		//first mono index is wrong
-		if(ccBlue.fail()){
-			return std::string("error in command !setColorGroups:blue color");
-		}
-
-
+        float red, green, blue;
+        readColor( vex[2], &red, &green, &blue, "!setColorGroups" );
 		for(size_t m=0; m< molecules_type[group].size(); ++m){
 			ingredients.modifyMolecules()[molecules_type[group].trueIndex(m)].setColor( red ,green , blue);
 
