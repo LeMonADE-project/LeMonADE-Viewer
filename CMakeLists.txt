@@ -80,6 +80,7 @@ link_directories ("${LEMONADE_DIR}/lib/")
 find_package(OpenGL REQUIRED)
 include_directories( ${OPENGL_INCLUDE_DIRS})
 
+set(FLTK_SKIP_FLUID TRUE)
 find_package(FLTK REQUIRED)
 include_directories( ${FLTK_INCLUDE_DIRS})
 
