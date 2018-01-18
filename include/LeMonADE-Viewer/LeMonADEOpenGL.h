@@ -204,7 +204,7 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	afile << "sky_sphere{pigment{color rgb< " << ingredients.getBGcolor()[0] << ", " << ingredients.getBGcolor()[1] << ", " << ingredients.getBGcolor()[2] << "> }}" << std::endl;
 	afile << "" << std::endl;
 	afile << "// light source" << std::endl;
-	afile << "light_source{<1000.0, 1000.0, -200.0> color White}" << std::endl;
+	//afile << "light_source{<1000.0, 1000.0, -200.0> color White}" << std::endl;
 
 	afile << "light_source{< " << cam.getCamXPos() << " , " << -cam.getCamZPos() << " , " << -cam.getCamYPos() << " > color White"<< std::endl;
 	//afile << "fade_distance " << -(cam.getCamYPos()+0.5*boxY) << std::endl;
