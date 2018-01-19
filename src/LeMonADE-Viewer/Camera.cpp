@@ -28,14 +28,14 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
 
-#include <LeMonADE-Viewer/Camera.h>
+#include "LeMonADE-Viewer/Camera.h"
 
 #include <fstream>
 #include <ostream>
 #include <iostream>
 
 Camera::Camera() {
-  
+
   //Camera position
   CamPosition.setAllCoordinates(0.0f, 0.0f, 0.0f);
 
@@ -48,13 +48,13 @@ Camera::Camera() {
   //Camera rotation angles
   CamAngleYaw = 0.0f;  // rotation in x-z-plane
   CamAnglePitch = 0.0f;  // rotation perpendicular to x-z-plane
-  
-  
+
+
   CamAngleYawSpeed = 0.0f;
   CamAnglePitchSpeed= 0.0f;
 
   movementSpeedFactor = 1.0f;
-  
+
   //Is a key pressed for linear camera movement?
   holdingForwardI = false;	// key I = move up
   holdingBackwardO = false;	// key O = move down
@@ -62,16 +62,16 @@ Camera::Camera() {
   holdingDownS = false;		// key S = move backward
   holdingLeftA = false;		// key A = move left
   holdingRightD = false;	// key D = move right
-  
+
   //Is the mouse button pressed for camera rotation?
   holdingMouseButtonLeft = false;
-  
+
   holdingForwardMouse = 0.0f;
   holdingBackwardMouse = 0.0f;
 }
 
 Camera::~Camera() {
-  
+
 }
 
 /****************************/
@@ -282,18 +282,18 @@ float Camera::toRads(const float theAngleinDegrees) {
 
 //Funktion to calculate the linear camera movement
 void Camera::calculateCameraMovement() {
-  
+
   float camMovementXComponent = 0.0f;
   float camMovementYComponent = 0.0f;
   float camMovementZComponent = 0.0f;
-  
-  //If one of the buttons is pressed, the camera gets moved in the appropriate 
-  //direction with constant speed. This means, a position difference is calculated 
+
+  //If one of the buttons is pressed, the camera gets moved in the appropriate
+  //direction with constant speed. This means, a position difference is calculated
   //(can be either + or - movementSpeedFactor).
   if (holdingForwardI == true) {
     camMovementZComponent = -movementSpeedFactor;
   }
-  
+
   if (holdingBackwardO == true) {
    camMovementZComponent = movementSpeedFactor;
   }
@@ -305,44 +305,44 @@ void Camera::calculateCameraMovement() {
   if (holdingDownS == true) {
     camMovementYComponent = -movementSpeedFactor;
   }
-  
+
 
   if (holdingLeftA == true) {
     camMovementXComponent = -movementSpeedFactor;
   }
-  
+
   if (holdingRightD == true) {
     camMovementXComponent = movementSpeedFactor;
   }
 
 
-  //The absolute position difference/speed of the camera 
+  //The absolute position difference/speed of the camera
   CamSpeedMovement.setAllCoordinates(camMovementXComponent, camMovementYComponent, camMovementZComponent);
-  
-  //Set a maximum for the camera position difference/speed 
+
+  //Set a maximum for the camera position difference/speed
   /*if (camXSpeed > movementSpeedFactor) {
     camXSpeed = movementSpeedFactor;
   }
-  
+
   if (camXSpeed < -movementSpeedFactor) {
     camXSpeed = -movementSpeedFactor;
   }
-  
+
   if (camYSpeed > movementSpeedFactor) {
     camYSpeed = movementSpeedFactor;
   }
-  
+
   if (camYSpeed < -movementSpeedFactor) {
     camYSpeed = -movementSpeedFactor;
   }
-  
+
   if (camZSpeed > movementSpeedFactor) {
     camZSpeed = movementSpeedFactor;
   }
-  
+
   if (camZSpeed < -movementSpeedFactor) {
     camZSpeed = -movementSpeedFactor;
-  } 
+  }
   */
 }
 
@@ -352,12 +352,12 @@ void Camera::calculateCameraMovement() {
 void Camera::handleMouseMove(int mouseX, int mouseY, int boxX, int boxY, int boxZ) {
   float horizMouseSensitivity = 10.0f;
   float vertMouseSensitivity = 10.0f;
-  
+
   //movement angle phi in x-z-plane when mouse is moved horizontally
   float phiMovement = (mouseX * 180.0f) / boxX; //yaw
   //movement angle theta perpendicular to x-z-plane when mouse is moved vertically
   float thetaMovement = - (mouseY * 180.0f) / boxY; //pitch
-  
+
 
 
   CamAngleYaw += phiMovement / horizMouseSensitivity;
@@ -370,7 +370,7 @@ void Camera::handleMouseMove(int mouseX, int mouseY, int boxX, int boxY, int box
 
   float camPhiRads = toRads(CamAngleYaw);
   float camThetaRads = toRads(CamAnglePitch);
-  
+
 }
 
 //Funktion to set the new camera position after a linear movement
@@ -380,11 +380,11 @@ void Camera::moveCamera() {
 
 	CamPosition.setY( CamPosition.getY() -holdingForwardMouse);
 	CamPosition.setY( CamPosition.getY() +holdingBackwardMouse);
-  
-  
+
+
   holdingForwardMouse = 0.0f;
   holdingBackwardMouse = 0.0f;
-  
+
   CamAngleYaw += CamAngleYawSpeed;
   CamAnglePitch += CamAnglePitchSpeed;
 

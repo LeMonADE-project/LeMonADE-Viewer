@@ -28,8 +28,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
 
-#ifndef LEMONADE_VIEWER_LINECOMMAND_H
-#define LEMONADE_VIEWER_LINECOMMAND_H
+#pragma once
 
 #include <string>
 #include <sstream>
@@ -1454,6 +1453,3 @@ public:
 				"!setRadiusGroups:idxGroup=radius\n");
 	}
 };
-
-
-#endif /* LEMONADEVIEWERLINECOMMAND_H_ */

@@ -28,8 +28,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
 
-#ifndef LEMONADE_VIEWER_FEATUREVISUALIZE_H
-#define LEMONADE_VIEWER_FEATUREVISUALIZE_H
+#pragma once
 
 #include <LeMonADE/feature/Feature.h>
 #include <LeMonADE/utility/Vector3D.h>
@@ -272,6 +271,3 @@ private:
 
 	float widthBond; // the extension (width of the bond)
 };
-
-
-#endif /* LEMONADE_VIEWER_FEATUREVISUALIZE_H */
