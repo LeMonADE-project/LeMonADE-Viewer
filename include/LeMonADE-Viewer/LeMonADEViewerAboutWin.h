@@ -28,8 +28,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
 
-#ifndef LEMONADE_VIEWER_ABOUT_WIN_H
-#define LEMONADE_VIEWER_ABOUT_WIN_H
+#pragma once
 
 #include <FL/Fl_Text_Display.H>
 #include <FL/Fl_Text_Buffer.H>
@@ -794,5 +793,3 @@ const std::string LeMonADEViewerAboutWin::getText() const
 	return msg;
 
 }
-
-#endif /* LEMONADE_VIEWER_ABOUT_WIN_H */
