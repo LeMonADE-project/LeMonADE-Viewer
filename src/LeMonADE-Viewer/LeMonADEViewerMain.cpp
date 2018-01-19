@@ -260,7 +260,7 @@ int main( int argc, char * argv[] )
             generatePovRayScript( ShowLeMonADEViewer.getIngredients(), fnameWoExt, width, height, ShowLeMonADEViewer.getWinOpenGL()->getCamera() );
 
             std::stringstream povrayCommand;
-            povrayCommand << "povray +I" << fnameWoExt << ".pov +O" << fnameWoExt << ".png +W" << width << " +H" << height << ( alphaBackground ? " +UA" : "" );
+            povrayCommand << "povray -d +I" << fnameWoExt << ".pov +O" << fnameWoExt << ".png +W" << width << " +H" << height << ( alphaBackground ? " +UA" : "" );
             std::cout << "execute command: " << povrayCommand.str() << std::endl;
             system( povrayCommand.str().c_str() );
         }

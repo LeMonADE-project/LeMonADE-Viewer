@@ -520,7 +520,6 @@ void initialize()
 		window->resizable(window);
 	} // Fl_Double_Window* o
 
-
 	// fill the groups with connected structures by an functor
 	// fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>(&(this->ingredients.getMolecules())),alwaysTrue() );
 	fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>((this->ingredients.getMolecules())),belongsToLinearStrand() );
@@ -530,13 +529,15 @@ void initialize()
 	winOpenGL->initialize();
 	winOpenGL->resizable(winOpenGL);
 
-	// show both windows
-	window->show();
-	winOpenGL->show();
+    if ( ! noGui )
+    {
+        // show both windows
+        window->show();
+        winOpenGL->show();
+    }
 
     // create the license and about windows
 	winAbout = new LeMonADEViewerAboutWin(600,600,"About LeMonADE-Viewer");
-
 
 	// define the user-commands
 	CommandLineMap["!setColor"] = new CommandSetColor<IngredientsType, MonomerGroupVector>();
