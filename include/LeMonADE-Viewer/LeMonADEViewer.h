@@ -29,18 +29,19 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 --------------------------------------------------------------------------------*/
 #pragma once
 
+#include <cmath>
+#include <cstddef>                  // NULL
+#include <cstdio>
+#include <cstdlib>                  // system
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <ostream>
+#include <set>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <fstream>
-#include <ostream>
-#include <iostream>
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h> //system
-#include <map>
-#include <sstream>
-#include <cstring>
-#include <set>
 
 
 
@@ -98,7 +99,8 @@ public:
         std::string const & filename,
         bool const rnoGui = false
     )
-    : ingredients( _ingredients ),
+    : window( NULL ), winOpenGL( NULL ), winAbout( NULL ),
+      ingredients( _ingredients ),
       ReadBfmFile( filename, _ingredients, UpdaterReadBfmFile<IngredientsType>::READ_STEPWISE ),
       delayTimeFrames( 0.25 ),
       smoothNumber( 0 ),
@@ -115,9 +117,9 @@ public:
 
 	virtual ~LeMonADEViewer()
     {
-		delete winAbout;
-		delete winOpenGL;
-		delete window;
+		if ( window    != NULL ) { delete window   ; window    = NULL; }
+		if ( winOpenGL != NULL ) { delete winOpenGL; winOpenGL = NULL; }
+		if ( winAbout  != NULL ) { delete winAbout ; winAbout  = NULL; }
 	}
 
     inline LeMonADEOpenGL<IngredientsType> * modifyWinOpenGL( void ){ return this->winOpenGL; }
