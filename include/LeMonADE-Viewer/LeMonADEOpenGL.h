@@ -183,6 +183,7 @@ int LeMonADEOpenGL<IngredientsType>::handle(int e) {
 	case FL_PUSH:
 		cam.setCamAngleYawSpeed(0.0);
 		cam.setCamAnglePitchSpeed(0.0);
+		cam.setCamAngleRollSpeed(0.0);
 
 		mouse.x = (Fl::event_x());
 		mouse.y = (Fl::event_y());
@@ -230,6 +231,8 @@ int LeMonADEOpenGL<IngredientsType>::handle(int e) {
 
 			cam.setCamAngleYawSpeed(0.0f);
 			cam.setCamAnglePitchSpeed(0.0f);
+
+            cam.setCamAngleRoll(0.0f);
 
 			// Camera position
 			cam.setCamXPos(0.0f);

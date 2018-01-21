@@ -49,6 +49,7 @@ inline void generatePovRayScript
     << " rotate <0,0," << -cam.getCamAngleYaw() << ">\n"
     //<< "rotate <" << -cam.getCamThetaRot() << ",0,0>\n"
     << " rotate <" << cam.getCamAnglePitch() << ",0,0>\n"
+    << " rotate <0,0," << cam.getCamAngleRoll() << ">\n"
     << " translate <" << 0.5 * boxX  << "," << 0.5 * boxY << "," << 0.5 * boxZ << ">\n"
     << "}\n"
     << "\n"
