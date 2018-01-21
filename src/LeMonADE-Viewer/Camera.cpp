@@ -48,10 +48,12 @@ Camera::Camera() {
   //Camera rotation angles
   CamAngleYaw = 0.0f;  // rotation in x-z-plane
   CamAnglePitch = 0.0f;  // rotation perpendicular to x-z-plane
+  CamAngleRoll = 0.0f;  // rotation along viewing line i.e. image rotation
 
 
   CamAngleYawSpeed = 0.0f;
   CamAnglePitchSpeed= 0.0f;
+  CamAngleRollSpeed= 0.0f;
 
   movementSpeedFactor = 1.0f;
 
@@ -96,6 +98,10 @@ float Camera::getCamAngleYaw() const {
 
 float Camera::getCamAnglePitch() const {
   return CamAnglePitch;
+}
+
+float Camera::getCamAngleRoll() const {
+  return CamAngleRoll;
 }
 
 
@@ -198,6 +204,15 @@ void Camera::setCamAnglePitch(float camAnglePitch) {
 
 void Camera::setCamAnglePitchSpeed(float camAnglePitchSpeed) {
 	CamAnglePitchSpeed = camAnglePitchSpeed;
+}
+
+
+void Camera::setCamAngleRoll(float camAngleRoll) {
+	CamAngleRoll = camAngleRoll;
+}
+
+void Camera::setCamAngleRollSpeed(float camAngleRollSpeed) {
+	CamAngleRollSpeed = camAngleRollSpeed;
 }
 
 
@@ -387,7 +402,4 @@ void Camera::moveCamera() {
 
   CamAngleYaw += CamAngleYawSpeed;
   CamAnglePitch += CamAnglePitchSpeed;
-
-
-
 }

@@ -49,10 +49,10 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 void printHelp( void )
 {
     std::cout
-    << "Usage: ./LeMonADE-Viewer [--alpha] [--camera <phi> [<theta> [<distance>]] ] [--help] [--script [<semicolon or newline separated commands>]] [--size <width> <height>] [--povray] ./LeMonADE-Viewer filename\n"
+    << "Usage: ./LeMonADE-Viewer [--alpha] [--camera <phi/yaw> [<theta/pitch> [<distance> [<xshift> [<yshift>] [<roll>]]]]] ] [--help] [--script [<semicolon or newline separated commands>]] [--size <width> <height>] [--povray] ./LeMonADE-Viewer filename\n"
     << "\n"
     << "  --alpha Makes background transparent instead of black\n"
-    << "  --camera specify the camera position. All angles given are in degree. Phi is the horizontal and theta the vertical rotation. The last argument is the distance to the box center with the default being 2*<box size>.\n"
+    << "  --camera specify the camera position. All angles given are in degree. Phi/yaw is the horizontal and theta/pitch the vertical rotation. The last argument is the distance to the box center with the default being 2*<box size>.\n"
     << "  --help   print this help message\n"
     << "  --script Automatically execute the specified commands. See the GUI !help command for a more up-to-date list of commands\n"
     << "      !setColor:idx1-idx2=(r,g,b)            \n"
@@ -85,9 +85,12 @@ int main( int argc, char * argv[] )
     {
         /* Command line argument parser */
         std::string filename;
-        float cameraPhi      = 0;
-        float cameraTheta    = 0;
-        float cameraDistance = std::numeric_limits< float >::quiet_NaN();
+        double cameraPhi      = 0;
+        double cameraTheta    = 0;
+        double cameraRoll     = 0;
+        double cameraDistance = std::numeric_limits< float >::quiet_NaN();
+        double cameraXShift   = 0;
+        double cameraYShift   = 0;
         bool onlyPovray   = false;
         bool customCamera = false;
         bool customSize   = false;
@@ -104,52 +107,33 @@ int main( int argc, char * argv[] )
                 else if ( sarg == "--camera" )
                 {
                     customCamera = true;
-                    char * parseEnd;
-                    if ( iArg+1 < argc )
+                    auto const parseNextArg = [&iArg,argc,argv]
+                    ( std::string const & name, double * const pResult ) -> int
                     {
-                        double tmp = strtod( argv[ iArg+1 ], &parseEnd );
-                        if ( argv[ iArg+1 ] != parseEnd )
+                        char * parseEnd;
+                        if ( iArg+1 < argc )
                         {
-                            ++iArg;
-                            cameraPhi = tmp;
-                            std::cerr << "Read cameraPhi = " << cameraPhi << "\n";
+                            double tmp = strtod( argv[ iArg+1 ], &parseEnd );
+                            if ( argv[ iArg+1 ] != parseEnd )
+                            {
+                                ++iArg;
+                                *pResult = tmp;
+                                std::cerr << "Read " << name << " = " << *pResult << "\n";
+                            }
+                            else
+                            {
+                                std::cerr << "Failed to parse '" << argv[ iArg+1 ] << "'\n";
+                                return 1;
+                            }
                         }
-                        else
-                        {
-                            std::cerr << "Failed to parse '" << argv[ iArg+1 ] << "'\n";
-                            continue;
-                        }
-                    }
-                    if ( iArg+1 < argc )
-                    {
-                        double tmp = strtod( argv[ iArg+1 ], &parseEnd );
-                        if ( argv[ iArg +1] != parseEnd )
-                        {
-                            ++iArg;
-                            cameraTheta = tmp;
-                            std::cerr << "Read cameraTheta = " << cameraTheta << "\n";
-                        }
-                        else
-                        {
-                            std::cerr << "Failed to parse '" << argv[ iArg+1 ] << "'\n";
-                            continue;
-                        }
-                    }
-                    if ( iArg+1 < argc )
-                    {
-                        double tmp = strtod( argv[ iArg+1 ], &parseEnd );
-                        if ( argv[ iArg+1 ] != parseEnd )
-                        {
-                            cameraDistance = tmp;
-                            std::cerr << "Read cameraDistance = " << cameraDistance << "\n";
-                            ++iArg;
-                        }
-                        else
-                        {
-                            std::cerr << "Failed to parse '" << argv[ iArg+1 ] << "'\n";
-                            continue;
-                        }
-                    }
+                        return 0;
+                    };
+                    if ( parseNextArg( "cameraPhi"     , &cameraPhi      ) ) continue;
+                    if ( parseNextArg( "cameraTheta"   , &cameraTheta    ) ) continue;
+                    if ( parseNextArg( "cameraDistance", &cameraDistance ) ) continue;
+                    if ( parseNextArg( "cameraXShift"  , &cameraXShift   ) ) continue;
+                    if ( parseNextArg( "cameraYShift"  , &cameraYShift   ) ) continue;
+                    if ( parseNextArg( "cameraRoll"    , &cameraRoll     ) ) continue;
                 }
                 else if ( sarg == "--povray" )
                     onlyPovray = true;
@@ -238,6 +222,7 @@ int main( int argc, char * argv[] )
             Camera & cam = ShowLeMonADEViewer.modifyWinOpenGL()->modifyCamera();
             cam.setCamAngleYaw  ( cameraPhi   );
             cam.setCamAnglePitch( cameraTheta );
+            cam.setCamAngleRoll ( cameraRoll  );
             if ( std::isnan( cameraDistance ) )
             {
                 cameraDistance = -2 * ShowLeMonADEViewer.getIngredients().getBoxY();
@@ -245,6 +230,8 @@ int main( int argc, char * argv[] )
             }
             std::cerr << "Setting camera y pos to " << cameraDistance << "\n";
 			cam.setCamYPos( cameraDistance );
+			cam.setCamXPos( cameraXShift );
+			cam.setCamZPos( cameraYShift );
         }
         if ( customSize )
             ShowLeMonADEViewer.modifyWinOpenGL()->size( width, height );
