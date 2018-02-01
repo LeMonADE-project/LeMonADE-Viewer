@@ -189,7 +189,7 @@ int main( int argc, char * argv[] )
         typedef LOKI_TYPELIST_3(FeatureMoleculesIO,FeatureVisualize,FeatureAttributes) Features;
 
         // in most cases the number of connections of a monomer dosn't exceed 8 bonds
-        const uint max_bonds=8;
+        const uint max_bonds=20;
 
         typedef ConfigureSystem<VectorInt3,Features,max_bonds> Config;
         typedef Ingredients<Config> IngredientsSystem;
