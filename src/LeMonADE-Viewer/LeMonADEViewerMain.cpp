@@ -79,6 +79,35 @@ void printHelp( void )
     << std::endl;
 }
 
+
+int parseNextArg
+(
+    int argc,
+    char * argv[],
+    int * const iArg,
+    std::string const & name,
+    double * const pResult
+)
+{
+    char * parseEnd;
+    if ( *iArg+1 < argc )
+    {
+        double tmp = strtod( argv[ *iArg+1 ], &parseEnd );
+        if ( argv[ *iArg+1 ] != parseEnd )
+        {
+            ++(*iArg);
+            *pResult = tmp;
+            std::cerr << "Read " << name << " = " << *pResult << "\n";
+        }
+        else
+        {
+            std::cerr << "Failed to parse '" << argv[ *iArg+1 ] << "'\n";
+            return 1;
+        }
+    }
+    return 0;
+};
+
 int main( int argc, char * argv[] )
 {
 	try
@@ -107,33 +136,12 @@ int main( int argc, char * argv[] )
                 else if ( sarg == "--camera" )
                 {
                     customCamera = true;
-                    auto const parseNextArg = [&iArg,argc,argv]
-                    ( std::string const & name, double * const pResult ) -> int
-                    {
-                        char * parseEnd;
-                        if ( iArg+1 < argc )
-                        {
-                            double tmp = strtod( argv[ iArg+1 ], &parseEnd );
-                            if ( argv[ iArg+1 ] != parseEnd )
-                            {
-                                ++iArg;
-                                *pResult = tmp;
-                                std::cerr << "Read " << name << " = " << *pResult << "\n";
-                            }
-                            else
-                            {
-                                std::cerr << "Failed to parse '" << argv[ iArg+1 ] << "'\n";
-                                return 1;
-                            }
-                        }
-                        return 0;
-                    };
-                    if ( parseNextArg( "cameraPhi"     , &cameraPhi      ) ) continue;
-                    if ( parseNextArg( "cameraTheta"   , &cameraTheta    ) ) continue;
-                    if ( parseNextArg( "cameraDistance", &cameraDistance ) ) continue;
-                    if ( parseNextArg( "cameraXShift"  , &cameraXShift   ) ) continue;
-                    if ( parseNextArg( "cameraYShift"  , &cameraYShift   ) ) continue;
-                    if ( parseNextArg( "cameraRoll"    , &cameraRoll     ) ) continue;
+                    if ( parseNextArg( argc, argv, &iArg, "cameraPhi"     , &cameraPhi      ) ) continue;
+                    if ( parseNextArg( argc, argv, &iArg, "cameraTheta"   , &cameraTheta    ) ) continue;
+                    if ( parseNextArg( argc, argv, &iArg, "cameraDistance", &cameraDistance ) ) continue;
+                    if ( parseNextArg( argc, argv, &iArg, "cameraXShift"  , &cameraXShift   ) ) continue;
+                    if ( parseNextArg( argc, argv, &iArg, "cameraYShift"  , &cameraYShift   ) ) continue;
+                    if ( parseNextArg( argc, argv, &iArg, "cameraRoll"    , &cameraRoll     ) ) continue;
                 }
                 else if ( sarg == "--povray" )
                     onlyPovray = true;
