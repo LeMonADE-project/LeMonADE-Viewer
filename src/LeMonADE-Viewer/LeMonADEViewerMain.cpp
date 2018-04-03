@@ -166,6 +166,8 @@ int main( int argc, char * argv[] )
                             std::cerr << "Couldn't parse height '" << argv[iArg] << "' to --size option!\n";
                     }
                 }
+                else if ( sarg == "-h" || sarg == "--help" )
+                    printHelp();
             }
             else if ( filename.empty() )
             {
