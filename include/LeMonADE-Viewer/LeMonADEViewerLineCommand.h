@@ -495,79 +495,66 @@ public:
 			if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
 				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
 		}*/
-		
-		Graph treeGraph;
 
 
-	Nodelist  degreeNode; // Degree of node
+		/*  ################################################################  */
 
-	for (int k= 0; k < ingredients.getMolecules().size(); k++)
-			{
-				for (int l = 0; l < ingredients.getMolecules().getNumLinks(k); l++)
-				{
-						// connect from idxAA to idxBB with value ZZ
-						// all (symmetric) connections
-						treeGraph[k][ingredients.getMolecules().getNeighborIdx(k, l)]=1;
+		// if the coloring should be calculated using the systems larges topological distance, replace MonomerGroupsVector molecules_type  by ingredients and the true index by the monomer index
+		// do the coloring groupwise
+		for(uint32_t groupIdx=0; groupIdx<molecules_type.size(); groupIdx++ ){
 
+			//typedef std::map<NodeIdx, Nodelist> Graph;
+			Graph treeGraph;
+			//typedef std::map<NodeIdx, int> Nodelist;
+			Nodelist  degreeNode; // Degree of node
+			for( uint32_t k=0; k<molecules_type[groupIdx].size(); k++){
+				// get the index from the group
+				int32_t monoIdx(molecules_type[groupIdx].trueIndex(k));
+				for( uint32_t link=0; link< ingredients.getMolecules().getNumLinks(monoIdx); link++){
+					// connect from idxAA to idxBB with value ZZ
+					// all (symmetric) connections
+					treeGraph[monoIdx][ingredients.getMolecules().getNeighborIdx(monoIdx, link)]=1;
 				}
 				// fill with degree of nodes
-				degreeNode[k]=ingredients.getMolecules().getNumLinks(k);
+				degreeNode[monoIdx]=ingredients.getMolecules().getNumLinks(monoIdx);
 			}
 
+			//finding the center of the tree (either one or two)
+			//typedef std::vector<NodeIdx> NodeVector;
+			NodeVector centerNodes;
+			findCentersOfTree(treeGraph, degreeNode, centerNodes);
 
-	//finding the center of the tree (either one or two)
-	NodeVector centerNodes;
-	findCentersOfTree(treeGraph, degreeNode, centerNodes);
+			//calculate the topological distance of center to all nodes and fill histogram
+			NodeVector::iterator itv;
 
-	//calculate the topological distance of center to all nodes and fill histogram
-	NodeVector::iterator itv;
-	for(itv=centerNodes.begin(); itv!=centerNodes.end(); ++itv){
+			for(itv=centerNodes.begin(); itv!=centerNodes.end(); ++itv){
+				NodeIdx startNode = (*itv);
 
-		
+            	// idx -> distance from center
+	        	Nodelist topo_distance;
+	        	dijkstra(treeGraph, startNode, topo_distance);
+	
+            	int maxTopologicalDistance = 0;
 
-	        NodeIdx startNode = (*itv);
-	        std::cout << std::endl << "startNode: " << startNode << std::endl;
+	       		Nodelist::iterator it;
+	       		for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
+            	    //find the maximum topological distance from the tree center
+            	    if(maxTopologicalDistance < it->second)
+            	        maxTopologicalDistance=it->second;
+            	}
 
-            // idx -> distance from center
-	        Nodelist topo_distance;
-	        dijkstra(treeGraph, startNode, topo_distance);
-
-	        std::cout << "startNode -> node => distance" <<std::endl;
-            
-            int maxTopologicalDistance = 0;
-
-	       	  Nodelist::iterator it;
-	       	  for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
-
-	       		 // std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
-
-                  //find the maximum topological distance from the tree center
-                  if(maxTopologicalDistance < it->second)
-                      maxTopologicalDistance=it->second;
-              }
-              std::cout<< startNode << " -> max topological distance " << maxTopologicalDistance <<std::endl;
-              
-              //color the structure
-              for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
-
-	       		//  std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
-
-                  // red part
-                  double redFraction = redStart + (redEnd-redStart)*it->second/(1.0*maxTopologicalDistance);
-                  
-                  // green part
-                  double greenFraction = greenStart + (greenEnd-greenStart)*it->second/(1.0*maxTopologicalDistance);
-                  
-                  // blue part
-                  double blueFraction = blueStart + (blueEnd-blueStart)*it->second/(1.0*maxTopologicalDistance);
-                  
-                  
-                  ingredients.modifyMolecules()[it->first].setColor( redFraction ,greenFraction , blueFraction);
-              }
-    
-	       	  
-	      }
-		
+	             //color the structure
+            	for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
+            	    // red part
+            	    double redFraction = redStart + (redEnd-redStart)*it->second/(1.0*maxTopologicalDistance);
+	                 // green part
+            	    double greenFraction = greenStart + (greenEnd-greenStart)*it->second/(1.0*maxTopologicalDistance);
+	                 // blue part
+            	    double blueFraction = blueStart + (blueEnd-blueStart)*it->second/(1.0*maxTopologicalDistance);
+		           	     ingredients.modifyMolecules()[it->first].setColor( redFraction ,greenFraction , blueFraction);
+            	}
+	      	} // end loop Node vector
+		} // end loop monomerGroups
 
 		return std::string("apply color to all monomers with numTopology");
 	}
