@@ -28,8 +28,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
 
-#ifndef LEMONADE_VIEWER_ABOUT_WIN_H
-#define LEMONADE_VIEWER_ABOUT_WIN_H
+#pragma once
 
 #include <FL/Fl_Text_Display.H>
 #include <FL/Fl_Text_Buffer.H>
@@ -161,6 +160,14 @@ const std::string LeMonADEViewerAboutWin::getText() const
 			"Principal developers:\n"
 			"---------------------\n"
 			"Ron Dockhorn, Germany\n"
+			"\n"
+			"\n"
+			"Following people contributed fixes and small enhancements to\n"
+			"LeMonADE-Viewer (in alphabetical order) and acknowledged for their support:\n"
+			"\n"
+			"Contributors:\n"
+			"-------------\n"
+			"Maximilian Knespel, Germany\n"
 			"\n"
 			"These authors keep copyright of their contributions. They just grant\n"
 			"a license to everyone to use it as detailed in LICENSE.\n"
@@ -794,5 +801,3 @@ const std::string LeMonADEViewerAboutWin::getText() const
 	return msg;
 
 }
-
-#endif /* LEMONADE_VIEWER_ABOUT_WIN_H */

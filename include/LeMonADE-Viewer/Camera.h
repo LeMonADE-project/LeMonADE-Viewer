@@ -28,8 +28,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
 
-#ifndef LEMONADE_VIEWER_CAMERA_H
-#define LEMONADE_VIEWER_CAMERA_H
+#pragma once
 
 #include <math.h>
 
@@ -45,18 +44,19 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
  *
  **/
 class Camera {
-  
+
 public:
   Camera();
   virtual ~Camera();
-  
+
   float getCamXPos() const;
   float getCamYPos() const;
   float getCamZPos() const;
-  
+
   float getCamAngleYaw() const;
   float getCamAnglePitch() const;
-  
+  float getCamAngleRoll() const;
+
   float getCamCenterXPos() const;
   float getCamCenterYPos() const;
   float getCamCenterZPos() const;
@@ -64,21 +64,21 @@ public:
   float getCamXSpeed() const;
   float getCamYSpeed() const;
   float getCamZSpeed() const;
-  
+
   float getMovementSpeedFactor() const;
-  
+
   bool getHoldingForwardI() const;
   bool getHoldingBackwardO() const;
   bool getHoldingUpW() const;
   bool getHoldingDownS() const;
   bool getHoldingLeftA() const;
   bool getHoldingRightD() const;
-  
+
   bool getHoldingMouseButtonLeft() const;
-  
+
   float getHoldingForwardMouse () const;
   float getHoldingBackwardMouse () const;
-  
+
   void setCamXPos(float camXPos = 0.0f);
   void setCamYPos(float camYPos = 0.0f);
   void setCamZPos(float camZPos = 0.0f);
@@ -89,39 +89,41 @@ public:
 
   void setCamAngleYaw(float camAngleYaw = 0.0f);
   void setCamAnglePitch(float camAnglePitch = 0.0f);
-  
+  void setCamAngleRoll(float camAngleRaw = 0.0f);
+
   void setCamAngleYawSpeed(float camAngleYawSpeed = 0.0f);
   void setCamAnglePitchSpeed(float camCamAnglePitchSpeed = 0.0f);
+  void setCamAngleRollSpeed(float camCamAngleRollSpeed = 0.0f);
 
   void setCamXSpeed(float camXSpeedParam = 0.0f);
   void setCamYSpeed(float camYSpeedParam = 0.0f);
   void setCamZSpeed(float camZSpeedParam = 0.0f);
-  
+
   void setMovementSpeedFactor(float movementSpeedFactorParam = 1.0f);
-  
+
   void setHoldingForwardI(bool holdingForwardIParam = false);
   void setHoldingBackwardO(bool holdingBackwardOParam = false);
   void setHoldingUpW(bool holdingUpWParam = false);
   void setHoldingDownS(bool holdingDownSParam = false);
   void setHoldingLeftA(bool holdingLeftAParam = false);
   void setHoldingRightD(bool holdingRightDParam = false);
-  
+
   void setHoldingMouseButtonLeft(bool holdingMouseButtonLeftParam = false);
-  
+
   void setHoldingForwardMouse(float holdingForwardMouseParam = 0.0f);
   void setHoldingBackwardMouse(float holdingBackwardMouseParam = 0.0f);
-  
+
   void calculateCameraMovement();
   void moveCamera();
   void handleMouseMove(int, int, int, int, int);
-  
+
   float toRads(const float);
 
 private:
-  
+
   VectorFloat3 CamPosition;
   VectorFloat3 CamSpeedMovement;
-  
+
   VectorFloat3 CamCenter;
 
   float CamAngleYaw;
@@ -129,23 +131,24 @@ private:
 
   float CamAnglePitch;
   float CamAnglePitchSpeed;
-  
+
+  float CamAngleRoll;
+  float CamAngleRollSpeed;
+
 
   float movementSpeedFactor;
-  
+
   bool holdingForwardI;
   bool holdingBackwardO;
   bool holdingUpW;
   bool holdingDownS;
   bool holdingLeftA;
   bool holdingRightD;
-  
+
   bool holdingMouseButtonLeft;
-  
+
   float holdingForwardMouse;
   float holdingBackwardMouse;
-  
-  
-};
 
-#endif
+
+};
