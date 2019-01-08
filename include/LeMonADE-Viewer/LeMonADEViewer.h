@@ -194,6 +194,7 @@ private:
 public:
 
     inline IngredientsType const & getIngredients( void ) const { return this->ingredients; };
+
     inline void executeCommand( std::string line )
     {
         std::string const command = CommandLineParser.findRead( line );
@@ -208,8 +209,19 @@ public:
         }
         else
         {
+        	if(command.compare("!exit") == 0)
+        		quit();
+
             T_TextBuffer->append( "command not found\n" );
         }
+    }
+
+    // shutdown and hide all windows -> leads to exit
+    inline void quit()
+    {
+    	while( Fl::first_window() ) {
+    		            Fl::first_window()->hide();
+    		}
     }
 
 void initialize()
@@ -223,8 +235,7 @@ void initialize()
 	window = new Fl_Double_Window(25,25,300, 585+35, "LeMonADE-Viewer");
 	{
 		{
-			Fl_Group* o = new Fl_Group(10, 15, 285, 50);
-
+			Fl_Group* o = new Fl_Group(10, 15, 170, 30);
 
 				B_ReverseWindingStart = new Fl_Button(10, 22, 30, 30, "@|<");
 				B_ReverseWindingStart->tooltip("Show the first frame");
@@ -262,13 +273,17 @@ void initialize()
 				B_ForwardWindingEnd->when(FL_WHEN_CHANGED);
 				B_ForwardWindingEnd->callback(( Fl_Callback*)cb_changeForwardWindingEnd, this );
 
+				o->end();
+		}
+
+		{
+			Fl_Group* o = new Fl_Group(195, 15, 70, 80);
 
 				Fl_Button* bo = new Fl_Button(195, 22, 30, 30, "P");
 				bo->tooltip("Generates POV-Ray-script");
 				bo->labelfont(FL_BOLD+FL_ITALIC);
 				bo->labelsize(22);
 				bo->callback(( Fl_Callback*)cb_povray, this );
-
 
 				Fl_Button* co = new Fl_Button(230, 22, 30, 30, "C");
 				co->tooltip("ColorChooser");
@@ -277,11 +292,17 @@ void initialize()
 				co->callback(( Fl_Callback*)cb_colorchooser, this );
 
 
-				Fl_Button* ao = new Fl_Button(265, 22, 30, 30, "i");
+				Fl_Button* ao = new Fl_Button(195, 57, 30, 30, "i");
 				ao->tooltip("License Information");
 				ao->labelfont(FL_BOLD+FL_ITALIC);
 				ao->labelsize(22);
 				ao->callback(( Fl_Callback*)cb_license, this );
+
+				Fl_Button* aquit = new Fl_Button(230, 57, 30, 30, "Q");
+				aquit->tooltip("Quit");
+				aquit->labelfont(FL_BOLD+FL_ITALIC);
+				aquit->labelsize(22);
+				aquit->callback(( Fl_Callback*)cb_quit, this );
 
 			o->end();
 
@@ -488,7 +509,8 @@ void initialize()
 				"!setRadius:all=radius\n"
 				"!setRadiusAttributes:att=radius\n"
 				"!setRadiusLinks:numLinks=radius\n"
-				"!setRadiusGroups:idxGroup=radius\n");
+				"!setRadiusGroups:idxGroup=radius\n"
+				"!exit\n");
 
 		I_CommandInput->when(FL_WHEN_ENTER_KEY|FL_WHEN_NOT_CHANGED);
 		I_CommandInput->callback(( Fl_Callback*)cb_changeCommandInput, this );
@@ -523,8 +545,8 @@ void initialize()
 	} // Fl_Double_Window* o
 
 	// fill the groups with connected structures by an functor
-	// fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>(&(this->ingredients.getMolecules())),alwaysTrue() );
-	fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>((this->ingredients.getMolecules())),belongsToLinearStrand() );
+	fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>((this->ingredients.getMolecules())),alwaysTrue() );
+	//fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>((this->ingredients.getMolecules())),belongsToLinearStrand() );
 
 	// create the OpenGL window
 	winOpenGL= new LeMonADEOpenGL<IngredientsType>(ingredients, linearGroupsVector, 400,25,800,800, "LeMonADE-Viewer OpenGL");
@@ -626,6 +648,10 @@ inline void cb_license_i( Fl_Button*, void* );
 // color chooser button
 static void cb_colorchooser( Fl_Button*, void* );
 inline void cb_colorchooser_i( Fl_Button*, void* );
+
+// quit button
+static void cb_quit( Fl_Button*, void* );
+inline void cb_quit_i( Fl_Button*, void* );
 
 // show bonds button
 static void cb_showbonds( Fl_Check_Button*, void* );
@@ -794,6 +820,32 @@ void LeMonADEViewer<IngredientsType>::cb_license_i( Fl_Button* , void* )
 	// should be replace by the info -box
 
 }
+
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::cb_quit( Fl_Button* obj, void* v )
+{
+	//should be replace by the info -box
+	LeMonADEViewer<IngredientsType> * T=( LeMonADEViewer<IngredientsType>* )v;
+	T->cb_quit_i(obj,v);
+
+}
+
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::cb_quit_i( Fl_Button* , void* )
+{
+	std::cout << "EXITing..." << std::endl;
+
+	/*while(Fl::first_window())
+	{
+	  delete Fl::first_window();
+	}
+	*/
+
+	quit();
+
+}
+
+
 
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_colorchooser( Fl_Button* obj, void* v )

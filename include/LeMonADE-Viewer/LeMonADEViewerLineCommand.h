@@ -32,7 +32,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 #include <sstream>
-#include <algorithm>    // std::find_if
+#include <algorithm>    // std::find_if std::max
 #include <cstddef>      // NULL
 #include <cstdlib>      // std::strtod
 #include <iostream>
@@ -403,66 +403,145 @@ public:
         float redEnd, greenEnd, blueEnd;
         readColor( vex[2], &redEnd, &greenEnd, &blueEnd, "!setColorTopology (end)" );
 
-		//color all monomers
-		/*for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
-		{
-			if(ingredients.modifyMolecules().getNumLinks(i) == numLinks)
-				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
-		}*/
-
-		Graph treeGraph;
 
 
-	Nodelist  degreeNode; // Degree of node
+		/*  ################################################################  */
 
-	for (int k= 0; k < ingredients.getMolecules().size(); k++)
-			{
-				for (int l = 0; l < ingredients.getMolecules().getNumLinks(k); l++)
-				{
-						// connect from idxAA to idxBB with value ZZ
-						// all (symmetric) connections
-						treeGraph[k][ingredients.getMolecules().getNeighborIdx(k, l)]=1;
+		// if the coloring should be calculated using the systems larges topological distance, replace MonomerGroupsVector molecules_type  by ingredients and the true index by the monomer index
+		// do the coloring groupwise
+		for(uint32_t groupIdx=0; groupIdx<molecules_type.size(); groupIdx++ ){
 
+			//typedef std::map<NodeIdx, Nodelist> Graph;
+			Graph treeGraph;
+			//typedef std::map<NodeIdx, int> Nodelist;
+			Nodelist  degreeNode; // Degree of node
+			for( uint32_t k=0; k<molecules_type[groupIdx].size(); k++){
+				// get the index from the group
+				int32_t monoIdx(molecules_type[groupIdx].trueIndex(k));
+				for( uint32_t link=0; link< ingredients.getMolecules().getNumLinks(monoIdx); link++){
+					// connect from idxAA to idxBB with value ZZ
+					// all (symmetric) connections
+					treeGraph[monoIdx][ingredients.getMolecules().getNeighborIdx(monoIdx, link)]=1;
 				}
 				// fill with degree of nodes
-				degreeNode[k]=ingredients.getMolecules().getNumLinks(k);
+				degreeNode[monoIdx]=ingredients.getMolecules().getNumLinks(monoIdx);
 			}
 
+			// calculate eccentricity of graph for all nodes
+			std::cout << "Calculate eccentricity can take time..." << std::endl;
+			std::map<NodeIdx, int> eccentricity;
+			//std::map<NodeIdx, Nodelist> distance;
 
-	//finding the center of the tree (either one or two)
-	NodeVector centerNodes;
-	findCentersOfTree(treeGraph, degreeNode, centerNodes);
+			for( uint32_t k=0; k<molecules_type[groupIdx].size(); k++)
+			{
+				NodeIdx startNode = molecules_type[groupIdx].trueIndex(k);
+				Nodelist topo_distance;
+				dijkstra(treeGraph, startNode, topo_distance);
 
-	//calculate the topological distance of center to all nodes and fill histogram
-	NodeVector::iterator itv;
-	for(itv=centerNodes.begin(); itv!=centerNodes.end(); ++itv){
+				int maxTopologicalDistance = 0;
+
+				for(Nodelist::iterator it=topo_distance.begin(); it!=topo_distance.end(); ++it)
+				{
+					//std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
+					//distance[startNode][it->first] = it->second;
+
+					if(maxTopologicalDistance < it->second)
+						maxTopologicalDistance=it->second;
+				}
+
+				eccentricity[startNode]=maxTopologicalDistance;
+				std::cout<< startNode << " -> eccentricity: " << eccentricity[startNode] <<std::endl;
+			}
+
+			// calculate the radius of the graph = min eccentricity
+			int radiusGraph = std::numeric_limits<int>::max();
+
+			for (std::map<NodeIdx, int>::iterator it_ecc=eccentricity.begin(); it_ecc!=eccentricity.end(); ++it_ecc)
+			{
+				if(it_ecc->second < radiusGraph)
+					radiusGraph = it_ecc->second;
+			}
+			std::cout << "Radius Graph = " << radiusGraph <<std::endl;
+
+			// calculate center nodes: eccentricity[center] == radiusGraph
+			NodeVector centerGraph;
+			for (std::map<NodeIdx, int>::iterator it_ecc=eccentricity.begin(); it_ecc!=eccentricity.end(); ++it_ecc)
+			{
+				if(it_ecc->second == radiusGraph)
+					centerGraph.push_back(it_ecc->first);
+			}
+
+			std::cout << "Center Graph = ( ";
+			for(NodeVector::iterator it_center=centerGraph.begin(); it_center!=centerGraph.end(); ++it_center){
+				std::cout << *it_center << " : ";
+			}
+			std::cout << " )" << std::endl;
+
+			// calculate the diameter of the graph = max eccentricity
+			int diameterGraph = std::numeric_limits<int>::min();
+
+			for (std::map<NodeIdx, int>::iterator it_ecc=eccentricity.begin(); it_ecc!=eccentricity.end(); ++it_ecc)
+			{
+				if(diameterGraph < it_ecc->second)
+					diameterGraph = it_ecc->second;
+			}
+			std::cout << "Diameter Graph = " << diameterGraph <<std::endl;
 
 
+			// pick an arbitrary center node
+			{
+			NodeIdx startNode = centerGraph.at(0);
+			Nodelist topo_distance;
+			dijkstra(treeGraph, startNode, topo_distance);
 
-	        NodeIdx startNode = (*itv);
-	        std::cout << std::endl << "startNode: " << startNode << std::endl;
+			int maxTopologicalDistance = 0;
 
-            // idx -> distance from center
-	        Nodelist topo_distance;
-	        dijkstra(treeGraph, startNode, topo_distance);
+			for(Nodelist::iterator it=topo_distance.begin(); it!=topo_distance.end(); ++it)
+			{
+				//find the maximum topological distance from the tree center
+				if(maxTopologicalDistance < it->second)
+					maxTopologicalDistance=it->second;
+			}
+
+			std::cout<< startNode << " -> max center distance " << maxTopologicalDistance <<std::endl;
+
+
+			/*
+
+			//finding the center of the tree (either one or two)
+			//typedef std::vector<NodeIdx> NodeVector;
+			NodeVector centerNodes;
+			findCentersOfTree(treeGraph, degreeNode, centerNodes);
+
+			//calculate the topological distance of center to all nodes and fill histogram
+			NodeVector::iterator itv;
+
+			for(itv=centerNodes.begin(); itv!=centerNodes.end(); ++itv){
+				NodeIdx startNode = (*itv);
+
+
+            	// idx -> distance from center
+	        	Nodelist topo_distance;
+	        	dijkstra(treeGraph, startNode, topo_distance);
+	
+            	int maxTopologicalDistance = 0;
+
+
+	       		Nodelist::iterator it;
+	       		for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
+            	    //find the maximum topological distance from the tree center
+            	    if(maxTopologicalDistance < it->second)
+            	        maxTopologicalDistance=it->second;
+            	}
+
 
 	        std::cout << "startNode -> node => distance" <<std::endl;
+			 */
 
-            int maxTopologicalDistance = 0;
 
-	       	  Nodelist::iterator it;
-	       	  for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
-
-	       		 // std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
-
-                  //find the maximum topological distance from the tree center
-                  if(maxTopologicalDistance < it->second)
-                      maxTopologicalDistance=it->second;
-              }
-              std::cout<< startNode << " -> max topological distance " << maxTopologicalDistance <<std::endl;
 
               //color the structure
-              for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
+              for(Nodelist::iterator it=topo_distance.begin(); it!=topo_distance.end(); ++it){
 
 	       		//  std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
 
@@ -480,7 +559,11 @@ public:
               }
 
 
-	      }
+
+
+
+	      	}
+		} // end loop monomerGroups
 
 
 		return std::string("apply color to all monomers with numTopology");
@@ -1297,6 +1380,7 @@ public:
 				"!setRadius:all=radius\n"
 				"!setRadiusAttributes:att=radius\n"
 				"!setRadiusLinks:numLinks=radius\n"
-				"!setRadiusGroups:idxGroup=radius\n");
+				"!setRadiusGroups:idxGroup=radius\n"
+				"!exit\n");
 	}
 };
