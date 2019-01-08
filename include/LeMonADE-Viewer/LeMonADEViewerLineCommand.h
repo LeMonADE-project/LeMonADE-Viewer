@@ -32,7 +32,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 #include <sstream>
-#include <algorithm>    // std::find_if
+#include <algorithm>    // std::find_if std::max
 #include <cstddef>      // NULL
 #include <cstdlib>      // std::strtod
 #include <iostream>
@@ -427,6 +427,87 @@ public:
 				degreeNode[monoIdx]=ingredients.getMolecules().getNumLinks(monoIdx);
 			}
 
+			// calculate eccentricity of graph for all nodes
+			std::cout << "Calculate eccentricity can take time..." << std::endl;
+			std::map<NodeIdx, int> eccentricity;
+			//std::map<NodeIdx, Nodelist> distance;
+
+			for( uint32_t k=0; k<molecules_type[groupIdx].size(); k++)
+			{
+				NodeIdx startNode = molecules_type[groupIdx].trueIndex(k);
+				Nodelist topo_distance;
+				dijkstra(treeGraph, startNode, topo_distance);
+
+				int maxTopologicalDistance = 0;
+
+				for(Nodelist::iterator it=topo_distance.begin(); it!=topo_distance.end(); ++it)
+				{
+					//std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
+					//distance[startNode][it->first] = it->second;
+
+					if(maxTopologicalDistance < it->second)
+						maxTopologicalDistance=it->second;
+				}
+
+				eccentricity[startNode]=maxTopologicalDistance;
+				std::cout<< startNode << " -> eccentricity: " << eccentricity[startNode] <<std::endl;
+			}
+
+			// calculate the radius of the graph = min eccentricity
+			int radiusGraph = std::numeric_limits<int>::max();
+
+			for (std::map<NodeIdx, int>::iterator it_ecc=eccentricity.begin(); it_ecc!=eccentricity.end(); ++it_ecc)
+			{
+				if(it_ecc->second < radiusGraph)
+					radiusGraph = it_ecc->second;
+			}
+			std::cout << "Radius Graph = " << radiusGraph <<std::endl;
+
+			// calculate center nodes: eccentricity[center] == radiusGraph
+			NodeVector centerGraph;
+			for (std::map<NodeIdx, int>::iterator it_ecc=eccentricity.begin(); it_ecc!=eccentricity.end(); ++it_ecc)
+			{
+				if(it_ecc->second == radiusGraph)
+					centerGraph.push_back(it_ecc->first);
+			}
+
+			std::cout << "Center Graph = ( ";
+			for(NodeVector::iterator it_center=centerGraph.begin(); it_center!=centerGraph.end(); ++it_center){
+				std::cout << *it_center << " : ";
+			}
+			std::cout << " )" << std::endl;
+
+			// calculate the diameter of the graph = max eccentricity
+			int diameterGraph = std::numeric_limits<int>::min();
+
+			for (std::map<NodeIdx, int>::iterator it_ecc=eccentricity.begin(); it_ecc!=eccentricity.end(); ++it_ecc)
+			{
+				if(diameterGraph < it_ecc->second)
+					diameterGraph = it_ecc->second;
+			}
+			std::cout << "Diameter Graph = " << diameterGraph <<std::endl;
+
+
+			// pick an arbitrary center node
+			{
+			NodeIdx startNode = centerGraph.at(0);
+			Nodelist topo_distance;
+			dijkstra(treeGraph, startNode, topo_distance);
+
+			int maxTopologicalDistance = 0;
+
+			for(Nodelist::iterator it=topo_distance.begin(); it!=topo_distance.end(); ++it)
+			{
+				//find the maximum topological distance from the tree center
+				if(maxTopologicalDistance < it->second)
+					maxTopologicalDistance=it->second;
+			}
+
+			std::cout<< startNode << " -> max center distance " << maxTopologicalDistance <<std::endl;
+
+
+			/*
+
 			//finding the center of the tree (either one or two)
 			//typedef std::vector<NodeIdx> NodeVector;
 			NodeVector centerNodes;
@@ -455,12 +536,12 @@ public:
 
 
 	        std::cout << "startNode -> node => distance" <<std::endl;
+			 */
 
 
-              std::cout<< startNode << " -> max topological distance " << maxTopologicalDistance <<std::endl;
 
               //color the structure
-              for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
+              for(Nodelist::iterator it=topo_distance.begin(); it!=topo_distance.end(); ++it){
 
 	       		//  std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
 
@@ -480,7 +561,8 @@ public:
 
 
 
-	      	} // end loop Node vector
+
+	      	}
 		} // end loop monomerGroups
 
 
