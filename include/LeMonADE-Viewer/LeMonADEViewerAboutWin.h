@@ -92,7 +92,7 @@ const std::string LeMonADEViewerAboutWin::getText() const
 
 	std::string msg=
 
-			"This is the application LeMonADE-Viewer V1.2.4.\n"
+			"This is the application LeMonADE-Viewer V1.3.0.\n"
 			"==============================================="
 			"\n"
 			"The abbreviation \"LeMonADE\" stands for \n"
@@ -150,6 +150,7 @@ const std::string LeMonADEViewerAboutWin::getText() const
             "!setRadiusAttributes:att=radius\n"
             "!setRadiusLinks:numLinks=radius\n"
             "!setRadiusGroups:idxGroup=radius\n"
+			"!exit\n"
 			"\n"
 			"LeMonADE-Viewer Authors\n"
 			"==============================\n"
@@ -160,6 +161,7 @@ const std::string LeMonADEViewerAboutWin::getText() const
 			"Principal developers:\n"
 			"---------------------\n"
 			"Ron Dockhorn, Germany\n"
+			"Martin Wengenmayr, Germany\n"
 			"\n"
 			"\n"
 			"Following people contributed fixes and small enhancements to\n"
