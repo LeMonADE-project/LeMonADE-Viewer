@@ -1297,6 +1297,7 @@ public:
 				"!setRadius:all=radius\n"
 				"!setRadiusAttributes:att=radius\n"
 				"!setRadiusLinks:numLinks=radius\n"
-				"!setRadiusGroups:idxGroup=radius\n");
+				"!setRadiusGroups:idxGroup=radius\n"
+				"!exit\n");
 	}
 };
