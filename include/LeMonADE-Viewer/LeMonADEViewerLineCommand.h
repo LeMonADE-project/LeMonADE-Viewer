@@ -277,7 +277,7 @@ public:
 		std::istringstream ccRed(color[0]);
 		ccRed >> red;
 
-		//first mono index is wrong
+		//first color index is wrong
 		if(ccRed.fail()){
 			return std::string("error in command !setColorAttributes:red color");
 		}
@@ -285,7 +285,7 @@ public:
 		std::istringstream ccGreen(color[1]);
 		ccGreen >> green;
 
-		//first mono index is wrong
+		//second color index is wrong
 		if(ccGreen.fail()){
 			return std::string("error in command !setColorAttributes:green color");
 		}
@@ -293,7 +293,7 @@ public:
 		std::istringstream ccBlue(color[2]);
 		ccBlue >> blue;
 
-		//first mono index is wrong
+		//third color index is wrong
 		if(ccBlue.fail()){
 			return std::string("error in command !setColorAttributes:blue color");
 		}
@@ -943,7 +943,7 @@ public:
 
 		//command has 3 tokens
 		if(vex.size() !=3 )
-			return std::string("error in command !setColorAttributes");
+			return std::string("error in command !setRadiusAttributes");
 
 		int32_t attribute=0;
 
@@ -952,7 +952,7 @@ public:
 
 		//attribute is wrong
 		if(ccAtt.fail()){
-			return std::string("error in command !setColorAttributes: attribute");
+			return std::string("error in command !setRadiusAttributes: attribute");
 		}
 
 		//get radius information
@@ -1082,12 +1082,110 @@ public:
 
 		for(size_t m=0; m< molecules_type[group].size(); ++m){
 			ingredients.modifyMolecules()[molecules_type[group].trueIndex(m)].setRadius( radius);
-
 		}
 
 		return std::string("apply color to all monomers within Groups");
 	}
 };
+
+template<class IngredientsType, class MoleculesType>
+class CommandSetSyncAttributeColor : public LineCommandBase<IngredientsType, MoleculesType>
+{
+public:
+	virtual ~CommandSetSyncAttributeColor(){};
+
+	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
+	{
+		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize1Parameter(_commandLine, ':');
+
+		//command has 2 tokens
+		if(vex.size() !=2 )
+			return std::string("error in command !setSyncAttributesON");
+
+		uint32_t sync=0;
+
+		std::istringstream ccAtt(vex[1]);
+		ccAtt >> sync;
+
+		//attribute is wrong
+		if(ccAtt.fail()){
+			return std::string("error in command !setSyncAttributesON: attribute");
+		}
+		
+		ingredients.setSyncAttributeColor(sync);
+		return std::string("set the synchronize of the attribute colors");
+	}
+};
+template<class IngredientsType, class MoleculesType>
+class CommandSetAttributeColorMap : public LineCommandBase<IngredientsType, MoleculesType>
+{
+public:
+	virtual ~CommandSetAttributeColorMap(){};
+
+	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
+	{
+		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
+
+		//command has 3 tokens
+		if(vex.size() !=3 )
+			return std::string("error in command !setAttributeColorMap");
+
+		int32_t attribute=0;
+
+		std::istringstream ccAtt(vex[1]);
+		ccAtt >> attribute;
+
+		//attribute is wrong
+		if(ccAtt.fail()){
+			return std::string("error in command !setAttributeColorMap: attribute");
+		}
+
+		//get color information
+		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
+
+		if(color.size() !=3 )
+			return std::string("error in command !setAttributeColorMap:color");
+
+		float red = 0.0f;
+		float green = 0.0f;
+		float blue = 0.0f;
+
+		std::istringstream ccRed(color[0]);
+		ccRed >> red;
+
+		//first color index is wrong
+		if(ccRed.fail()){
+			return std::string("error in command !setAttributeColorMap:red color");
+		}
+
+		std::istringstream ccGreen(color[1]);
+		ccGreen >> green;
+
+		//second color index is wrong
+		if(ccGreen.fail()){
+			return std::string("error in command !setAttributeColorMap:green color");
+		}
+
+		std::istringstream ccBlue(color[2]);
+		ccBlue >> blue;
+
+		//third color index is wrong
+		if(ccBlue.fail()){
+			return std::string("error in command !setAttributeColorMap:blue color");
+		}
+		
+		//color all monomers
+		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
+			if(ingredients.modifyMolecules()[i].getAttributeTag() == attribute)
+				ingredients.modifyMolecules()[i].setColor( red ,green , blue);
+		ingredients.addAttributeColor(attribute, red, green ,blue );
+		
+		std::cout <<" Added color " << ingredients.getAttributeColor(attribute)  << std::endl;
+		return std::string(" set a color for the attribute color map");
+	}
+};
+
+
 
 template<class IngredientsType, class MoleculesType>
 class CommandGetHelp : public LineCommandBase<IngredientsType, MoleculesType>
@@ -1117,7 +1215,9 @@ public:
 				"!setRadius:all=radius\n"
 				"!setRadiusAttributes:att=radius\n"
 				"!setRadiusLinks:numLinks=radius\n"
-				"!setRadiusGroups:idxGroup=radius\n");
+				"!setRadiusGroups:idxGroup=radius\n"
+				"!setAttributeColorMap:att=(red,green,blue)\n"
+				"!setSyncAttributesON:0/1\n" );
 	}
 };
 

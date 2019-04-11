@@ -229,14 +229,13 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	afile << "// objects (monomers)  " << std::endl;
 
 	// das ist jetzt die reale monomer-Position (STIMMT DAS SCHON SO?)
-	for(size_t n=0; n< molecules.size(); ++n){
+	for(size_t n=0; n< molecules.size(); ++n)
+	{
 	    	  if(molecules[n].isVisible())
 	    	  {
 	    		  if (ingredients.isSmoothing() == false){
-
 	    			  if (ingredients.isVisualizePBC() == true) {
 	    				  afile << "sphere{< " << ((((molecules[n][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX)  << ", " << ((((molecules[n][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY)  << ", " << (((((molecules[n][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ) )  << "> " << molecules[n].getRadius() << std::endl;
-
 	    			  }
 	    			  else
 	    			  	  //afile << "sphere{< " << linearStrandsVector[n].operator[](m)[0] - 0.5*boxX << ", " << linearStrandsVector[n].operator[](m)[1] - 0.5*boxX << ", " << -linearStrandsVector[n].operator[](m)[2] + 0.5 * boxZ << "> 2" << std::endl;
@@ -246,16 +245,13 @@ void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFi
 	    		  {
 	    			  if (ingredients.isVisualizePBC() == true) {
 	    				  afile << "sphere{< " << ((mod(molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX)  ) )  << ", " << ((mod(molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) ) )  << ", " << (((mod(molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) ) ))  << "> " << (molecules[n].getRadius()) << std::endl;
-
 	    			  }
 	    			  else
 	    			  afile << "sphere{< " << (molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX())  << ", " << (molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY())  << ", " << (molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ())  << "> " << (molecules[n].getRadius()) << std::endl;
 	    		  }
-		afile << " pigment {color rgb<" << molecules[n].getColor().getX() << ", " << molecules[n].getColor().getY() << ", " << molecules[n].getColor().getZ() <<  ">}" << std::endl;
-		afile << " finish {phong 5.0 phong_size 40 reflection rgb<0.0, 0.0, 0.0> roughness 0.05 ambient 0.1 diffuse 0.9} }" << std::endl;
-
-	      }
-
+			  afile << " pigment {color rgb<" << molecules[n].getColor().getX() << ", " << molecules[n].getColor().getY() << ", " << molecules[n].getColor().getZ() <<  ">}" << std::endl;
+			  afile << " finish {phong 5.0 phong_size 40 reflection rgb<0.0, 0.0, 0.0> roughness 0.05 ambient 0.1 diffuse 0.9} }" << std::endl;
+		  }
 	}
 	afile << std::endl;
 
