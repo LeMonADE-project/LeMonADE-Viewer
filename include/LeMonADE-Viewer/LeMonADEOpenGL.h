@@ -28,8 +28,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
 
-#ifndef LEMONADE_VIEWER_OPENGL_H
-#define LEMONADE_VIEWER_OPENGL_H
+#pragma once
 
 #include <FL/Fl.H>
 #include <FL/Fl_Gl_Window.H>
@@ -40,7 +39,10 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 #include <LeMonADE/utility/DepthIterator.h>
 #include <LeMonADE/utility/MonomerGroup.h>
 
-#include <LeMonADE-Viewer/Camera.h>
+#include "LeMonADE-Viewer/Camera.h"
+#include "generatePovRayScript.h"
+
+
 
 // struct for emulate new and last mouse position
 typedef struct {
@@ -103,18 +105,22 @@ public:
 		ingredients.setWidthBond(0.3);
 };
 
+    inline Camera & modifyCamera( void ){ return cam; }
+    inline Camera const & getCamera( void ) const { return cam; }
+
 	virtual ~LeMonADEOpenGL(){};
 
 	void initialize();
 
-	void generatePovRayScript(std::string croppedFilenamePovray);
+	void generatePovRayScript( std::string const & croppedFilenamePovray );
 
 	// modulo operation for float numbers
 	float mod(float a, float N) {return a - N*floor(a/N);}
 
 	// interpolation of sphere
 	// maybe we should use GLUT for that
-	void precalculateSphere(int lats, int longs) {
+	void precalculateSphere( int lats, int longs )
+    {
 		int i, j;
 
 		int offset = ingredients.getSubdivisionSpheres()+1;
@@ -143,224 +149,13 @@ public:
 	}
 };
 
-template <class IngredientsType>
-void LeMonADEOpenGL<IngredientsType>::generatePovRayScript(std::string croppedFilenamePovray){
-
-    std::ofstream afile;
-	std::string afileName = croppedFilenamePovray+".pov";
-	afile.open(afileName.c_str(),std::ios::trunc);
-
-	afile << "// povray +I"<<croppedFilenamePovray << ".pov +O"<<croppedFilenamePovray << ".png +W"<<this->w() <<" +H" << this->h() << " +P " << std::endl;
-	afile << "// +UA for transparency mask" << std::endl;
-	afile << "" << std::endl;
-	afile << "#version 3.5;" << std::endl << std::endl;
-	afile << "#include "<< "\"" << "colors.inc" << "\"" << std::endl;
-	afile << "" << std::endl;
-	afile << "global_settings {assumed_gamma 1.0 noise_generator 2}" << std::endl;
-	afile << "" << std::endl;
-
-	// camera
-	afile << "camera{" << std::endl;
-	float radius = 1.5*boxZ;
-
-	float pi = atan(1)*4;
-	float PhiPov = (-cam.getCamAngleYaw()) * pi / 180.0;
-	float ThetaPov1 = (-cam.getCamAnglePitch()) * pi / 180.0;
-	float ThetaPov2 = (cam.getCamAnglePitch()) * pi / 180.0;
-
-	// need clauses if position of camera is positive
-	if((-cam.getCamYPos()) >=0)
-	{	afile << "location <" << 0 << " , " << 0 << " , " << -cam.getCamYPos() << " > " << std::endl;
-
-    afile << " right -x*" << this->w() << "/" << this->h()<<std::endl;
-    afile << " look_at <0.0, 0.0, 0.0>" << std::endl;
-    afile << " translate <" << cam.getCamXPos() << ", " << -cam.getCamZPos() << ", " << 0.0 << ">" << std::endl;
-	}
-	else
-		{	afile << "location <" << 0 << " , " << 0 << " , " << 0 << " > " << std::endl;
-
-		    afile << " right -x*" << this->w() << "/" << this->h()<<std::endl;
-		    afile << " look_at <0.0, 0.0, " << (-cam.getCamYPos()) <<">" << std::endl;
-		    afile << " translate <" << cam.getCamXPos() << ", " << -cam.getCamZPos() << ", " << 0.0 << ">" << std::endl;
-			}
-
-	double aspectRatio = (this->w() > this->h())? float(this->w())/float(this->h()) : float(this->h())/float(this->w());
-	double fovy = 45.0; //degrees - fov is in y in openGL, povRay uses in x
-	double anglefovx = 2 * atan ( ((1.0*this->w())/this->h()) * tan(fovy/2.0/180*3.1416) )* 180.0/3.1416;
-	afile << " angle " << anglefovx<< std::endl;
-
-	afile << "rotate  < 90, 0, 0 >" << std::endl;
-
-		afile << "rotate  < 0, 0, " << -cam.getCamAngleYaw() << " >" << std::endl;
-		//afile << "rotate  <" << -cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
-		afile << "rotate  <" << cam.getCamAnglePitch() << ", 0 , 0 > "<< std::endl;
-
-		afile << " translate <" << 0.5*boxX  <<" , " << 0.5*boxY <<" , " << 0.5*boxZ << ">" << std::endl;
-
-		afile << "}" << std::endl;
-
-	afile << "" << std::endl;
-	afile << "// background color" << std::endl;
-	afile << "sky_sphere{pigment{color rgb< " << ingredients.getBGcolor()[0] << ", " << ingredients.getBGcolor()[1] << ", " << ingredients.getBGcolor()[2] << "> }}" << std::endl;
-	afile << "" << std::endl;
-	afile << "// light source" << std::endl;
-	afile << "light_source{<1000.0, 1000.0, -200.0> color White}" << std::endl;
-
-	afile << "light_source{< " << cam.getCamXPos() << " , " << -cam.getCamZPos() << " , " << -cam.getCamYPos() << " > color White"<< std::endl;
-	//afile << "fade_distance " << -(cam.getCamYPos()+0.5*boxY) << std::endl;
-	afile << "//fade_distance " << 100 << std::endl;
-	afile << "//fade_power 3" << std::endl;
-	afile << "rotate  < 90, 0, 0 >" << std::endl;
-
-		afile << "rotate  < 0, 0, " << -cam.getCamAngleYaw() << " >" << std::endl;
-		//afile << "rotate  <" << -cam.getCamThetaRot() << ", 0 , 0 > "<< std::endl;
-		afile << "rotate  <" << cam.getCamAnglePitch() << ", 0 , 0 > "<< std::endl;
-
-		afile << "// translate <" << 0.5*boxX  <<" , " << 0.5*boxY <<" , " << 0.5*boxZ << ">" << std::endl;
-
-	//afile << "rotate  < -90, 0, 0 >" << std::std::endl;
-	//	afile << "rotate  < 0, 0, " << -cam.getCamPhiRot() << " >" << std::std::endl;
-		//afile << "rotate  <" <<cam.getCamThetaRot()* cam.getCamThetaRotAxisX()<< ", 0 , " << cam.getCamThetaRot()*cam.getCamThetaRotAxisZ() << "  > "<< std::std::endl;
-	//	afile << "rotate  <" << -cam.getCamThetaRot() << ", 0 , 0 > "<< std::std::endl;
-	//	afile << " translate <" << 0.5*boxX  <<" , " << 0.5*boxY <<" , " << -0.5*boxZ << ">" << std::endl;
-	afile << "}" << std::endl;
-
-	afile << "" << std::endl;
-	afile << "// objects (monomers)  " << std::endl;
-
-	// das ist jetzt die reale monomer-Position (STIMMT DAS SCHON SO?)
-	for(size_t n=0; n< molecules.size(); ++n)
-	{
-	    	  if(molecules[n].isVisible())
-	    	  {
-	    		  if (ingredients.isSmoothing() == false){
-	    			  if (ingredients.isVisualizePBC() == true) {
-	    				  afile << "sphere{< " << ((((molecules[n][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX)  << ", " << ((((molecules[n][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY)  << ", " << (((((molecules[n][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ) )  << "> " << molecules[n].getRadius() << std::endl;
-	    			  }
-	    			  else
-	    			  	  //afile << "sphere{< " << linearStrandsVector[n].operator[](m)[0] - 0.5*boxX << ", " << linearStrandsVector[n].operator[](m)[1] - 0.5*boxX << ", " << -linearStrandsVector[n].operator[](m)[2] + 0.5 * boxZ << "> 2" << std::endl;
-	    			  afile << "sphere{< " << (molecules[n][0]+ingredients.getTranslationInX())  << ", " << (molecules[n][1]+ingredients.getTranslationInY()) << ", " << (molecules[n][2]+ingredients.getTranslationInZ())  << "> " << (molecules[n].getRadius()) << std::endl;
-	    		  }
-	    		  else
-	    		  {
-	    			  if (ingredients.isVisualizePBC() == true) {
-	    				  afile << "sphere{< " << ((mod(molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX)  ) )  << ", " << ((mod(molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) ) )  << ", " << (((mod(molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) ) ))  << "> " << (molecules[n].getRadius()) << std::endl;
-	    			  }
-	    			  else
-	    			  afile << "sphere{< " << (molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX())  << ", " << (molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY())  << ", " << (molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ())  << "> " << (molecules[n].getRadius()) << std::endl;
-	    		  }
-			  afile << " pigment {color rgb<" << molecules[n].getColor().getX() << ", " << molecules[n].getColor().getY() << ", " << molecules[n].getColor().getZ() <<  ">}" << std::endl;
-			  afile << " finish {phong 5.0 phong_size 40 reflection rgb<0.0, 0.0, 0.0> roughness 0.05 ambient 0.1 diffuse 0.9} }" << std::endl;
-		  }
-	}
-	afile << std::endl;
-
-	//bonds:
-
-	if (ingredients.isVisualizeBonds() == true) {
-		for(size_t n=0; n< molecules.size(); ++n){
-
-	    	  size_t linkcount = ingredients.getMolecules().getNumLinks(n);		// check for the number of links the current monomer has
-
-	    	  if(molecules[n].isVisible())
-	    	  {
-	    		  for(size_t k=0; k < linkcount; ++k)
-	    			  {		  size_t neighboridx = ingredients.getMolecules().getNeighborIdx(n, k); 	// search for the monomers connected to the current
-
-	    			  //draw only one bond
-	    			  if(neighboridx < n)
-	    			  {
-	    		  if (ingredients.isSmoothing() == false)
-	    		  {
-	    		 	    //afile << "sphere{< " << linearStrandsVector[n].operator[](m)[0] - 0.5*boxX << ", " << linearStrandsVector[n].operator[](m)[1] - 0.5*boxX << ", " << -linearStrandsVector[n].operator[](m)[2] + 0.5 * boxZ << "> 2" << std::endl;
-	    		 	   // afile << "sphere{< " << linearStrandsVectorGroup[n].operator[](m)[0]  << ", " << linearStrandsVectorGroup[n].operator[](m)[1]  << ", " << (-linearStrandsVectorGroup[n].operator[](m)[2])  << "> " << (point_size/10.0f) << std::endl;
-                       VectorFloat3 bondDirection;
-                       bondDirection.setX(1.0f*(molecules[n][0]-ingredients.getMolecules()[neighboridx][0]));
-                       bondDirection.setY(1.0f*(molecules[n][1]-ingredients.getMolecules()[neighboridx][1]));
-                       bondDirection.setZ(1.0f*(molecules[n][2]-ingredients.getMolecules()[neighboridx][2]));
-
-                       float bondLength= bondDirection.getLength();
-
-                       if((bondLength>0.1) && (bondLength<6.0))
-                       {
-                      // bondDirection.normalize();
-
-	    		 	   //afile << "cylinder{ < " << linearStrandsVectorGroup[n].operator[](m)[0]  << ", " << linearStrandsVectorGroup[n].operator[](m)[1]  << ", " << (-linearStrandsVectorGroup[n].operator[](m)[2])  << ">, <" <<
-	    		 	   afile << "cylinder{ <0,0,0> " << //linearStrandsVectorGroup[n].operator[](m)[0]  << ", " << linearStrandsVectorGroup[n].operator[](m)[1]  << ", " << (-linearStrandsVectorGroup[n].operator[](m)[2])  << ">, <" <<
-	    		 			    ", <" <<(-bondDirection[0]) << "," << -(bondDirection[1]) <<"," << -(bondDirection[2]) << ">, "  << ingredients.getWidthBond() <<
-	    		 			  // ingredients.getMolecules()[neighboridx][0]  << ", " << ingredients.getMolecules()[neighboridx][1]  << ", " << (-ingredients.getMolecules()[neighboridx][2])  << "> "  <<
-	    		 			 "  texture{ pigment{ gradient <"<< bondDirection[0]/bondDirection.getLength() <<"," << bondDirection[1]/bondDirection.getLength() <<"," << (bondDirection[2]/bondDirection.getLength()) <<
-	    		 			 "> color_map{ [0.0 color rgb<" << ingredients.getMolecules()[neighboridx].getColor().getX() << ", " << ingredients.getMolecules()[neighboridx].getColor().getY() << ", " << ingredients.getMolecules()[neighboridx].getColor().getZ() <<  "> ]" <<
-	    		 			 "[1.0 color rgb<" << molecules[n].getColor().getX() << ", " << molecules[n].getColor().getY() << ", " << molecules[n].getColor().getZ() <<  "> ]} scale "<< bondLength<<
-	    		 			 " translate <" << (-bondDirection[0]) <<"," << -(bondDirection[1]) <<"," << -(bondDirection[2]) <<">} finish { phong 1}} translate < ";
-	    		 			//ingredients.getMolecules()[neighboridx][0]  << ", " << ingredients.getMolecules()[neighboridx][1]  << ", " << (-ingredients.getMolecules()[neighboridx][2])  << "> "  <<
-
-	    		 	   if(ingredients.isVisualizePBC() == false)
-	    		 	   {
-	    		 		   afile << (molecules[n][0]+ingredients.getTranslationInX())  << ", " << (molecules[n][1]+ingredients.getTranslationInY())  << ", " << (molecules[n][2]+ingredients.getTranslationInZ())  << ">";
-	    		 	   }
-	    		 	   else
-	    		 	   {
-	    		 		   afile << ((((molecules[n][0]+ingredients.getTranslationInX())% boxX) + boxX)%boxX) << ", " << ((((molecules[n][1]+ingredients.getTranslationInY())% boxY) + boxY)%boxY)  << ", " << ((((molecules[n][2]+ingredients.getTranslationInZ())% boxZ) + boxZ)%boxZ)  << ">";
-	    		 	   }
-
-	    		 	   afile << "scale <1,1,1> rotate<0,0,0> translate<0,0,0> }" <<std::endl;
-
-                       }
-
-
-	    		  }
-	    		  else //smoothing true
-		    		  {
-	    			                   VectorFloat3 bondDirection;
-	    			                        bondDirection.setX(1.0f*(molecules[n].getSmoothCoordinate()[0]-ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[0]));
-	    			                        bondDirection.setY(1.0f*(molecules[n].getSmoothCoordinate()[1]-ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[1]));
-	    			                        bondDirection.setZ(1.0f*(molecules[n].getSmoothCoordinate()[2]-ingredients.getMolecules()[neighboridx].getSmoothCoordinate()[2]));
-
-	    			                        float bondLength= bondDirection.getLength();
-
-	    			                                               if((bondLength>0.1) && (bondLength<6.0))
-	    			                                               {
-	    			 	    		 	   //afile << "cylinder{ < " << linearStrandsVectorGroup[n].operator[](m)[0]  << ", " << linearStrandsVectorGroup[n].operator[](m)[1]  << ", " << (-linearStrandsVectorGroup[n].operator[](m)[2])  << ">, <" <<
-	    			 	    		 	   afile << "cylinder{ <0,0,0> " << //linearStrandsVectorGroup[n].operator[](m)[0]  << ", " << linearStrandsVectorGroup[n].operator[](m)[1]  << ", " << (-linearStrandsVectorGroup[n].operator[](m)[2])  << ">, <" <<
-	    			 	    		 			    ", <" <<(-bondDirection[0]) << "," << -(bondDirection[1]) <<"," << -(bondDirection[2]) << ">, "  << ingredients.getWidthBond() <<
-	    			 	    		 			  // ingredients.getMolecules()[neighboridx][0]  << ", " << ingredients.getMolecules()[neighboridx][1]  << ", " << (-ingredients.getMolecules()[neighboridx][2])  << "> "  <<
-	    			 	    		 			 "  texture{ pigment{ gradient <"<< bondDirection[0]/bondDirection.getLength() <<"," << bondDirection[1]/bondDirection.getLength() <<"," << (bondDirection[2]/bondDirection.getLength()) <<
-	    			 	    		 			 "> color_map{ [0.0 color rgb<" << ingredients.getMolecules()[neighboridx].getColor().getX() << ", " << ingredients.getMolecules()[neighboridx].getColor().getY() << ", " << ingredients.getMolecules()[neighboridx].getColor().getZ() <<  "> ]" <<
-	    			 	    		 			 "[1.0 color rgb<" << molecules[n].getColor().getX() << ", " << molecules[n].getColor().getY() << ", " << molecules[n].getColor().getZ() <<  "> ]} scale "<< bondLength<<
-	    			 	    		 			 " translate <" << (-bondDirection[0]) <<"," << -(bondDirection[1]) <<"," << -(bondDirection[2]) <<">} finish { phong 1}} translate < ";
-
-	    			 	    		 	 if(ingredients.isVisualizePBC() == false)
-	    			 	    		 	 	{
-	    			 	    		 	 	    afile << (molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX())  << ", " << (molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY())  << ", " << (molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ())  << ">";
-	    			 	    		 	 	}
-	    			 	    		 	else
-	    			 	    		 	 	 {
-	    			 	    		 	 	    afile << mod((mod(molecules[n].getSmoothCoordinate()[0]+ingredients.getTranslationInX(), boxX) )+boxX, boxX) << ", " << mod((mod(molecules[n].getSmoothCoordinate()[1]+ingredients.getTranslationInY(), boxY) )+boxY, boxY)  << ", " << mod((mod(molecules[n].getSmoothCoordinate()[2]+ingredients.getTranslationInZ(), boxZ) )+boxZ, boxZ)  << ">";
-	    			 	    		 	 	 }
-
-	    			 	    		 	afile << "scale <1,1,1> rotate<0,0,0> translate<0,0,0> }" <<std::endl;
-	    			                                               }
-
-		    		 	 }
-	    			  }
-
-	    		  }
-	    			  }
-
-	      }
-	}
-
-
-
-
-
-
-	afile << "" << std::endl;
-	// BOND VECTORS EINBINDEN!!!
-	afile.close();
-
-
+template < class IngredientsType >
+void LeMonADEOpenGL< IngredientsType >::generatePovRayScript
+(
+    std::string const & croppedFilenamePovray
+)
+{
+    ::generatePovRayScript( this->ingredients, croppedFilenamePovray, this->w(), this->h(), this->cam );
 }
 
 
@@ -387,6 +182,7 @@ int LeMonADEOpenGL<IngredientsType>::handle(int e) {
 	case FL_PUSH:
 		cam.setCamAngleYawSpeed(0.0);
 		cam.setCamAnglePitchSpeed(0.0);
+		cam.setCamAngleRollSpeed(0.0);
 
 		mouse.x = (Fl::event_x());
 		mouse.y = (Fl::event_y());
@@ -434,6 +230,8 @@ int LeMonADEOpenGL<IngredientsType>::handle(int e) {
 
 			cam.setCamAngleYawSpeed(0.0f);
 			cam.setCamAnglePitchSpeed(0.0f);
+
+            cam.setCamAngleRoll(0.0f);
 
 			// Camera position
 			cam.setCamXPos(0.0f);
@@ -1057,5 +855,3 @@ void LeMonADEOpenGL<IngredientsType>::draw_bonds()
 
 	}
 }
-
-#endif /* LEMONADE_VIEWER_OPENGL_H */

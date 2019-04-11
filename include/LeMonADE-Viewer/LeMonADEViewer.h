@@ -27,21 +27,21 @@ You should have received a copy of the GNU General Public License
 along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
-#ifndef LEMONADE_VIEWER_H
-#define LEMONADE_VIEWER_H
+#pragma once
 
+#include <cmath>
+#include <cstddef>                  // NULL
+#include <cstdio>
+#include <cstdlib>                  // system
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <ostream>
+#include <set>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <fstream>
-#include <ostream>
-#include <iostream>
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h> //system
-#include <map>
-#include <sstream>
-#include <cstring>
-#include <set>
 
 
 
@@ -53,10 +53,10 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 #include <LeMonADE/io/Parser.h>
 
 
-#include <LeMonADE-Viewer/LeMonADEOpenGL.h>
-#include <LeMonADE-Viewer/LineParser.h>
-#include <LeMonADE-Viewer/LeMonADEViewerLineCommand.h>
-#include <LeMonADE-Viewer/LeMonADEViewerAboutWin.h>
+#include "LeMonADE-Viewer/LeMonADEOpenGL.h"
+#include "LeMonADE-Viewer/LineParser.h"
+#include "LeMonADE-Viewer/LeMonADEViewerLineCommand.h"
+#include "LeMonADE-Viewer/LeMonADEViewerAboutWin.h"
 
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
@@ -93,24 +93,39 @@ class LeMonADEViewer: public AbstractUpdater
 public:
 
 	// constructor
-	LeMonADEViewer(IngredientsType& _ingredients, std::string  filename):ingredients(_ingredients), ReadBfmFile(filename,_ingredients,UpdaterReadBfmFile<IngredientsType>::READ_STEPWISE), SyncAttributes(false)
+	LeMonADEViewer
+	(
+	    IngredientsType & _ingredients,
+	    std::string const & filename,
+	    bool const rnoGui = false
+	)
+	: window( NULL ), winOpenGL( NULL ), winAbout( NULL ),
+	  ingredients( _ingredients ),
+	  ReadBfmFile( filename, _ingredients, UpdaterReadBfmFile<IngredientsType>::READ_STEPWISE ),
+	  delayTimeFrames( 0.25 ),
+	  smoothNumber( 0 ),
+	  FrameNumber( 0 ),
+	  noGui( rnoGui ), 
+	  SyncAttributes(false)
 	{
-		delayTimeFrames=0.25;
-		smoothNumber = 0;
-		FrameNumber = 0;
 		// construct the cropped filename without path and file ending
 		std::string fn=filename;
 		fn.erase (fn.length()-4, fn.length());
 		unsigned found = fn.find_last_of("/\\");
-		cropFilename=fn.substr(found+1);
+		cropFilename = fn.substr(found+1);
 		std::cout << "cropped filename: " << cropFilename << std::endl;
-	};
+	}
 
-	virtual ~LeMonADEViewer(){
-		delete winAbout;
-		delete winOpenGL;
-		delete window;
-	};
+	virtual ~LeMonADEViewer()
+	{
+		if ( window    != NULL ) { delete window   ; window    = NULL; }
+		if ( winOpenGL != NULL ) { delete winOpenGL; winOpenGL = NULL; }
+		if ( winAbout  != NULL ) { delete winAbout ; winAbout  = NULL; }
+	}
+
+    inline LeMonADEOpenGL<IngredientsType> * modifyWinOpenGL( void ){ return this->winOpenGL; }
+    inline LeMonADEOpenGL<IngredientsType> const * getWinOpenGL( void ) const { return this->winOpenGL; }
+
 private:
 
 	Fl_Double_Window* window;         //!< The main window with all buttons
@@ -175,28 +190,60 @@ private:
 
 	//!< Reduced filename without path and white-spaces for POV-Ray output
 	std::string cropFilename;
+
 	
 	//! choose if attributes are updated before each mcs step 
 	bool SyncAttributes;
 	//! color map for attributes
 	std::map<uint32_t,VectorFloat3> AttributeColor;
+
+	bool const noGui;
 public:
 
-void initialize(){
 
+    inline IngredientsType const & getIngredients( void ) const { return this->ingredients; };
+
+    inline void executeCommand( std::string line )
+    {
+        std::string const command = CommandLineParser.findRead( line );
+
+        std::cout << "command: " << command << "\n";
+        std::cout << "line   : " << line    << "\n";
+
+        if ( CommandLineMap.find(command) != CommandLineMap.end() )
+        {
+            std::string result = CommandLineMap[command]->executeLineCommand( ingredients, linearGroupsVector, line );
+            T_TextBuffer->append( std::string( "\n" + line + "\n" + result + "\n" ).c_str() );
+        }
+        else
+        {
+        	if(command.compare("!exit") == 0)
+        		quit();
+
+            T_TextBuffer->append( "command not found\n" );
+        }
+    }
+
+    // shutdown and hide all windows -> leads to exit
+    inline void quit()
+    {
+    	while( Fl::first_window() ) {
+    		            Fl::first_window()->hide();
+    		}
+    }
+
+void initialize()
+{
 	std::cout <<"Initialize the BFM- File-Reader...";
 	ReadBfmFile.initialize();
 	std::cout <<" done." << std::endl;
 
 	std::cout <<"Initialize FLTK"  << std::endl;
-
 	// creating and setting up the main window
-
 	window = new Fl_Double_Window(25,25,300, 585+35, "LeMonADE-Viewer");
 	{
 		{
-			Fl_Group* o = new Fl_Group(10, 15, 285, 50);
-
+			Fl_Group* o = new Fl_Group(10, 15, 170, 30);
 
 				B_ReverseWindingStart = new Fl_Button(10, 22, 30, 30, "@|<");
 				B_ReverseWindingStart->tooltip("Show the first frame");
@@ -234,13 +281,17 @@ void initialize(){
 				B_ForwardWindingEnd->when(FL_WHEN_CHANGED);
 				B_ForwardWindingEnd->callback(( Fl_Callback*)cb_changeForwardWindingEnd, this );
 
+				o->end();
+		}
+
+		{
+			Fl_Group* o = new Fl_Group(195, 15, 70, 80);
 
 				Fl_Button* bo = new Fl_Button(195, 22, 30, 30, "P");
 				bo->tooltip("Generates POV-Ray-script");
 				bo->labelfont(FL_BOLD+FL_ITALIC);
 				bo->labelsize(22);
 				bo->callback(( Fl_Callback*)cb_povray, this );
-
 
 				Fl_Button* co = new Fl_Button(230, 22, 30, 30, "C");
 				co->tooltip("ColorChooser");
@@ -249,11 +300,17 @@ void initialize(){
 				co->callback(( Fl_Callback*)cb_colorchooser, this );
 
 
-				Fl_Button* ao = new Fl_Button(265, 22, 30, 30, "i");
+				Fl_Button* ao = new Fl_Button(195, 57, 30, 30, "i");
 				ao->tooltip("License Information");
 				ao->labelfont(FL_BOLD+FL_ITALIC);
 				ao->labelsize(22);
 				ao->callback(( Fl_Callback*)cb_license, this );
+
+				Fl_Button* aquit = new Fl_Button(230, 57, 30, 30, "Q");
+				aquit->tooltip("Quit");
+				aquit->labelfont(FL_BOLD+FL_ITALIC);
+				aquit->labelsize(22);
+				aquit->callback(( Fl_Callback*)cb_quit, this );
 
 			o->end();
 
@@ -440,7 +497,7 @@ void initialize(){
 		T_TextBuffer = new Fl_Text_Buffer();
 		T_TextDisplay = new Fl_Text_Display(25, 355+35, 250, 110);
 		T_TextDisplay->buffer(T_TextBuffer);
-		T_TextDisplay->wrap_mode( Fl_Text_Display::WRAP_AT_BOUNDS,0);
+		T_TextDisplay->wrap_mode( Fl_Text_Display::WRAP_NONE,0);
 
 
 		I_CommandInput = new Fl_Input(25, 492+35, 250, 43, "command:");
@@ -448,12 +505,13 @@ void initialize(){
 
 		I_CommandInput->tooltip("!setColor:idxMono1-idxMono2=(red,green,blue)\n"
 				"!setColor:all=(red,green,blue)\n"
+                "!setColor:BG=(red,green,blue)\n"
 				"!setColorAttributes:att=(red,green,blue)\n"
 				"!setColorLinks:numLinks=(red,green,blue)\n"
 				"!setColorVisibility:vis=(red,green,blue)\n"
 				"!setColorGroups:idxGroup=(red,green,blue)\n"
 				"!setColorGroupsRandom\n"
-				"!setColor:BG=(red,green,blue)\n"
+                "!setColorTopology:(redCenter,greenCenter,blueCenter)=(redEnd,greenEnd,blueEnd)\n"
 				"!setVisible:idxMono1-idxMono2=vis\n"
 				"!setVisible:all=vis\n"
 				"!setVisibleAttributes:att=vis\n"
@@ -465,7 +523,8 @@ void initialize(){
 				"!setRadiusLinks:numLinks=radius\n"
 				"!setRadiusGroups:idxGroup=radius\n"
 				"!setAttributeColorMap:att=(red,green,blue)\n"
-				"!setSyncAttributesON:0/1\n" );
+				"!setSyncAttributesON:0/1\n" 
+				"!exit\n");
 
 		I_CommandInput->when(FL_WHEN_ENTER_KEY|FL_WHEN_NOT_CHANGED);
 		I_CommandInput->callback(( Fl_Callback*)cb_changeCommandInput, this );
@@ -499,28 +558,30 @@ void initialize(){
 		window->resizable(window);
 	} // Fl_Double_Window* o
 
-
 	// fill the groups with connected structures by an functor
-	// fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>(&(this->ingredients.getMolecules())),alwaysTrue() );
-	fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>((this->ingredients.getMolecules())),belongsToLinearStrand() );
+	fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>((this->ingredients.getMolecules())),alwaysTrue() );
+	//fill_connected_groups( this->ingredients.getMolecules(), linearGroupsVector, MonomerGroup<typename IngredientsType::molecules_type>((this->ingredients.getMolecules())),belongsToLinearStrand() );
 
 	// create the OpenGL window
 	winOpenGL= new LeMonADEOpenGL<IngredientsType>(ingredients, linearGroupsVector, 400,25,800,800, "LeMonADE-Viewer OpenGL");
 	winOpenGL->initialize();
 	winOpenGL->resizable(winOpenGL);
 
-	// show both windows
-	window->show();
-	winOpenGL->show();
+    if ( ! noGui )
+    {
+        // show both windows
+        window->show();
+        winOpenGL->show();
+    }
 
     // create the license and about windows
 	winAbout = new LeMonADEViewerAboutWin(600,600,"About LeMonADE-Viewer");
-
 
 	// define the user-commands
 	CommandLineMap["!setColor"] = new CommandSetColor<IngredientsType, MonomerGroupVector>();
 	CommandLineMap["!setColorAttributes"] = new CommandSetColorAttributes<IngredientsType, MonomerGroupVector>();
 	CommandLineMap["!setColorLinks"] = new CommandSetColorLinks<IngredientsType, MonomerGroupVector>();
+    CommandLineMap["!setColorTopology"] = new CommandSetColorTopology<IngredientsType, MonomerGroupVector>();
 
 	CommandLineMap["!setVisibleAttributes"] = new CommandSetVisibleAttributes<IngredientsType, MonomerGroupVector>();
 	CommandLineMap["!setVisibleLinks"] = new CommandSetVisibleLinks<IngredientsType, MonomerGroupVector>();
@@ -543,6 +604,7 @@ void initialize(){
 
 	// message in the info box
 	std::stringstream startMessage;
+    startMessage << "file: " << cropFilename << std::endl;
 	startMessage << "box (" << ingredients.getBoxX() << ", " << ingredients.getBoxY() << "," << ingredients.getBoxZ() <<")" << std::endl;
 	startMessage << "periodic (" << (ingredients.isPeriodicX()?"true":"false") << ", " << (ingredients.isPeriodicY()?"true":"false") << "," << (ingredients.isPeriodicZ()?"true":"false") <<")" << std::endl;
 	startMessage << "number monomers = " << ingredients.getMolecules().size()<< std::endl;
@@ -613,6 +675,12 @@ inline void cb_license_i( Fl_Button*, void* );
  */
 static void cb_colorchooser( Fl_Button*, void* );
 inline void cb_colorchooser_i( Fl_Button*, void* );
+
+/*!@fn cb_quit
+ * @brief button to quit 
+ */
+static void cb_quit( Fl_Button*, void* );
+inline void cb_quit_i( Fl_Button*, void* );
 
 /*!@fn cb_showbonds
  * @brief box to enable/disable bond drawing
@@ -819,22 +887,13 @@ void LeMonADEViewer<IngredientsType>::cb_povray_i( Fl_Button* , void* )
 	std::cout << FilenamePovray.str() << std::endl;
 	std::string croppedFilenamePovray = FilenamePovray.str();
 
-	winOpenGL->generatePovRayScript(croppedFilenamePovray);
+	winOpenGL->generatePovRayScript( croppedFilenamePovray );
 
 	std::stringstream povrayCommand;
-
-	povrayCommand << "povray +I" << croppedFilenamePovray << ".pov +O" << croppedFilenamePovray << ".png +W";
-	povrayCommand << winOpenGL->w();
-	povrayCommand << " +H";
-	povrayCommand << winOpenGL->h();
+	povrayCommand << "povray +I" << croppedFilenamePovray << ".pov +O" << croppedFilenamePovray << ".png +W" << winOpenGL->w() << " +H" << winOpenGL->h();
 	//povrayCommand << " +P ";
-
-	std::cout << "execute command:" << std::endl;
-	std::cout << povrayCommand.str() << std::endl;
-
-	system (povrayCommand.str().c_str());
-
-
+	std::cout << "execute command: " << povrayCommand.str() << std::endl;
+	system( povrayCommand.str().c_str() );
 }
 
 template <class IngredientsType>
@@ -856,6 +915,32 @@ void LeMonADEViewer<IngredientsType>::cb_license_i( Fl_Button* , void* )
 	// should be replace by the info -box
 
 }
+
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::cb_quit( Fl_Button* obj, void* v )
+{
+	//should be replace by the info -box
+	LeMonADEViewer<IngredientsType> * T=( LeMonADEViewer<IngredientsType>* )v;
+	T->cb_quit_i(obj,v);
+
+}
+
+template <class IngredientsType>
+void LeMonADEViewer<IngredientsType>::cb_quit_i( Fl_Button* , void* )
+{
+	std::cout << "EXITing..." << std::endl;
+
+	/*while(Fl::first_window())
+	{
+	  delete Fl::first_window();
+	}
+	*/
+
+	quit();
+
+}
+
+
 
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_colorchooser( Fl_Button* obj, void* v )
@@ -1264,11 +1349,10 @@ void LeMonADEViewer<IngredientsType>::ch_propertycolorchooser_i(Fl_Choice* obj)
 
 	std::cout << line << std::endl;
 	// execute the coloring
-	if (CommandLineMap.find(command) != CommandLineMap.end())
-		CommandLineMap[command]->executeLineCommand(ingredients, linearGroupsVector, line);
+	executeCommand( line );
     }
     else 
-      std::cout << "No scheme specified!" << std::endl;
+      std::cout <<"No scheme specified!" <<std::endl;
 }
 
 
@@ -1281,33 +1365,8 @@ void LeMonADEViewer<IngredientsType>::cb_changeCommandInput( Fl_Input* obj, void
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_changeCommandInput_i( Fl_Input* obj)
 {
-
-	std::string line(I_CommandInput->value());
-	std::string command = CommandLineParser.findRead(line);
-
-	std::cout << "command:" << std::endl;
-	std::cout << command << std::endl;
-	std::cout << "line:" << std::endl;
-	std::cout << line << std::endl;
-
-	std::stringstream sd;
-	sd << std::endl << line << std::endl;
-
-	if (CommandLineMap.find(command) != CommandLineMap.end())
-	{
-		T_TextBuffer->append(sd.str().c_str());
-		T_TextBuffer->append((CommandLineMap[command]->executeLineCommand(ingredients, linearGroupsVector, line)).c_str());
-		T_TextBuffer->append("\n");
-	}
-	else{T_TextBuffer->append("command not found\n");}
-
-// 	// choose static colors for attributes 
-// 	if (line==std::string("!setSyncAttributes=1"))
-// 	  SyncAttributes=true;
-// 	else if (line==std::string("!setSyncAttributes=0"))
-// 	  SyncAttributes=false;
-	
-	
+    std::string const line( I_CommandInput->value() );
+    executeCommand( line );
 	
 	//  maybe useful for animation purpose
 	if(line==std::string("!rendering"))
@@ -1340,12 +1399,8 @@ void LeMonADEViewer<IngredientsType>::cb_changeCommandInput_i( Fl_Input* obj)
 			povrayCommand << " +H";
 			povrayCommand << winOpenGL->h();
 			povrayCommand << " -D -P ";
-
-
 			system (povrayCommand.str().c_str());
-
 		}
-
 	}
 	
 }
@@ -1374,7 +1429,3 @@ void LeMonADEViewer<IngredientsType>::cb_changeFrameInput_i( Fl_Int_Input* obj)
 	Fl::remove_timeout(Timer_CB);
 	//std::cout << "jump to  Frame" << std::endl;
 }
-
-
-
-#endif

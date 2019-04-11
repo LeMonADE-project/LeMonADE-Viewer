@@ -28,12 +28,11 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
 
-#ifndef LEMONADE_VIEWER_LINEPARSER_H
-#define LEMONADE_VIEWER_LINEPARSER_H
+#pragma once
 
 /*****************************************************************************/
 /**
- * @file 
+ * @file
  * @brief Definition of class Parser
  * */
 /*****************************************************************************/
@@ -47,7 +46,7 @@ using namespace std;
  * @class LineParser
  *
  * @brief Basic parser for line in Viewer
- * 
+ *
 /*****************************************************************************/
 class LineParser
 {
@@ -66,6 +65,3 @@ private:
   //! Stream to be parsed
  // istream& stream;
 };
-
-
-#endif /* LEMONADE_VIEWER_LINEPARSER_H */

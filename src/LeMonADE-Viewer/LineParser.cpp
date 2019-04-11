@@ -36,7 +36,7 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
  * @brief Implementation of Parser
  * */
 /*****************************************************************************/
-#include <LeMonADE-Viewer/LineParser.h>
+#include "LeMonADE-Viewer/LineParser.h"
 
 /*****************************************************************************/
 //constructor and destructor

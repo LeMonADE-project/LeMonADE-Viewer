@@ -28,11 +28,21 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------------*/
 
-#ifndef LEMONADE_VIEWER_LINECOMMAND_H
-#define LEMONADE_VIEWER_LINECOMMAND_H
+#pragma once
 
 #include <string>
 #include <sstream>
+#include <algorithm>    // std::find_if std::max
+#include <cstddef>      // NULL
+#include <cstdlib>      // std::strtod
+#include <iostream>
+#include <string>
+#include <map>
+#include <utility>
+#include <functional>
+#include <queue>
+#include <vector>
+#include <math.h>
 
 #include <LeMonADE/utility/RandomNumberGenerators.h>
 
@@ -45,7 +55,7 @@ public:
 
 	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& str)=0;
 
-	std::vector<std::string> tokenize1Parameter(const std::string& str,
+	static std::vector<std::string> tokenize1Parameter(const std::string& str,
 			char delim) {
 		std::vector<std::string> tokens;
 		std::stringstream mySstream(str);
@@ -59,7 +69,7 @@ public:
 
 	}
 
-	std::vector<std::string> tokenize2Parameter(const std::string& str,	char delim1, char delim2) {
+	static std::vector<std::string> tokenize2Parameter(const std::string& str,	char delim1, char delim2) {
 		std::vector<std::string> tokens;
 		std::stringstream mySstream(str);
 		std::string temp;
@@ -83,7 +93,7 @@ public:
 
 	}
 
-	std::vector<std::string> tokenize3Parameter(const std::string& str,
+	static std::vector<std::string> tokenize3Parameter(const std::string& str,
 			char delim1, char delim2, char delim3) {
 		std::vector<std::string> tokens;
 		std::stringstream mySstream(str);
@@ -108,6 +118,79 @@ public:
 
 	}
 };
+
+int readColor
+(
+    std::string const & sr,
+    float     * const   r ,
+    float     * const   g ,
+    float     * const   b ,
+    std::string const & sCallingCommand = ""
+)
+{
+    /* @todo tokenize3Parameter could be a standalone function, the template parameters are not even needed ...! */
+    std::vector< std::string >  sColors = LineCommandBase<int,int>::tokenize3Parameter( sr, '(', ',' , ')' );
+
+    unsigned int const nChannels = 3;
+    if ( sColors.size() != nChannels )
+    {
+        std::stringstream msg;
+        msg << "Error ";
+        if ( ! sCallingCommand.empty() )
+            msg << "in command '" << sCallingCommand << "' ";
+        msg << "when reading the color in rgb(x,x,x) format. ";
+        msg << "Expected exactly " << nChannels << " colors, but got " << sColors.size() << "!";
+        std::cerr << msg.str() << "\n";
+        return 1;
+    }
+
+    /* convert strings to floats (failed colors are set to 0 by strtod) */
+    char * eos = NULL;
+    unsigned int failedReads = 0;
+    float * c[] = { r,g,b };
+    for ( unsigned int i = 0; i < nChannels; ++i )
+    {
+        *c[i] = strtod( sColors[i].c_str(), &eos );
+        failedReads |= ( eos == sColors[i] ) << i;
+    }
+    if ( failedReads )
+    {
+        std::stringstream msg;
+        msg << "Error ";
+        if ( ! sCallingCommand.empty() )
+            msg << "in command '" << sCallingCommand << "' ";
+        msg << "when reading the color: ";
+        if ( failedReads & ( 1 << 0 ) ) msg << "red"  ;
+        if ( failedReads & ( 1 << 1 ) ) msg << "green";
+        if ( failedReads & ( 1 << 2 ) ) msg << "blue" ;
+        msg << "!";
+        std::cerr << msg.str() << "\n";
+        return 2;
+    }
+
+    /* check for correct ranges */
+    if ( *r > 1 || *g > 1 || *b > 1 )
+    {
+        *r /= 255;
+        *g /= 255;
+        *b /= 255;
+    }
+    if ( ! ( 0 <= *r && *r <= 1 && 0 <= *g && *g <= 1 && 0 <= *b && *b <= 1 ) )
+    {
+        std::stringstream msg;
+        msg << "Error ";
+        if ( ! sCallingCommand.empty() )
+            msg << "in command '" << sCallingCommand << "' ";
+        msg << "when reading the color in rgb(x,x,x) format. "
+            << "Colors must be either in range [0,1] or [0,255]. "
+            << "The latter gets automatically downscaled to [0,1]. "
+            << "But the input received is: (" << *r << "," << *g << "," << *b << ")";
+        std::cerr << msg.str() << "\n";
+        return 3;
+    }
+
+    return 0;
+}
 
 // handles
 // !setColor:idx1-idx2=(r,g,b)
@@ -135,40 +218,8 @@ public:
 		if((mono.size() ==0) || (mono.size() > 2) )
 			return std::string("error in command !setColor:monomerindex");
 
-		//get color information
-		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
-
-		if(color.size() !=3 )
-			return std::string("error in command !setColor:color");
-
-
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
-
-		std::istringstream ccRed(color[0]);
-		ccRed >> red;
-
-		//first mono index is wrong
-		if(ccRed.fail()){
-			return std::string("error in command !setColor:red color");
-		}
-
-		std::istringstream ccGreen(color[1]);
-		ccGreen >> green;
-
-		//first mono index is wrong
-		if(ccGreen.fail()){
-			return std::string("error in command !setColor:green color");
-		}
-
-		std::istringstream ccBlue(color[2]);
-		ccBlue >> blue;
-
-		//first mono index is wrong
-		if(ccBlue.fail()){
-			return std::string("error in command !setColor:blue color");
-		}
+        float red, green, blue;
+        readColor( vex[2], &red, &green, &blue, "!setColor" );
 
 		//color all monomers
 		if(mono.size()==1 && (!mono[0].compare("all")))
@@ -264,39 +315,9 @@ public:
 			return std::string("error in command !setColorAttributes: attribute");
 		}
 
-		//get color information
-		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
+		float red, green, blue;
+		readColor( vex[2], &red, &green, &blue, "!setColorAttributes" );
 
-		if(color.size() !=3 )
-			return std::string("error in command !setColorAttributes:color");
-
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
-
-		std::istringstream ccRed(color[0]);
-		ccRed >> red;
-
-		//first color index is wrong
-		if(ccRed.fail()){
-			return std::string("error in command !setColorAttributes:red color");
-		}
-
-		std::istringstream ccGreen(color[1]);
-		ccGreen >> green;
-
-		//second color index is wrong
-		if(ccGreen.fail()){
-			return std::string("error in command !setColorAttributes:green color");
-		}
-
-		std::istringstream ccBlue(color[2]);
-		ccBlue >> blue;
-
-		//third color index is wrong
-		if(ccBlue.fail()){
-			return std::string("error in command !setColorAttributes:blue color");
-		}
 
 		//color all monomers
 		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
@@ -333,39 +354,8 @@ public:
 			return std::string("error in command !setColorLinks: numLinks");
 		}
 
-		//get color information
-		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
-
-		if(color.size() !=3 )
-			return std::string("error in command !setColorLinks:color");
-
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
-
-		std::istringstream ccRed(color[0]);
-		ccRed >> red;
-
-		//first mono index is wrong
-		if(ccRed.fail()){
-			return std::string("error in command !setColorLinks:red color");
-		}
-
-		std::istringstream ccGreen(color[1]);
-		ccGreen >> green;
-
-		//first mono index is wrong
-		if(ccGreen.fail()){
-			return std::string("error in command !setColorLinks:green color");
-		}
-
-		std::istringstream ccBlue(color[2]);
-		ccBlue >> blue;
-
-		//first mono index is wrong
-		if(ccBlue.fail()){
-			return std::string("error in command !setColorLinks:blue color");
-		}
+		float red, green, blue;
+		readColor( vex[2], &red, &green, &blue, "!setColorLinks" );
 
 		//color all monomers
 
@@ -380,6 +370,347 @@ public:
 	}
 };
 
+
+
+
+template<class IngredientsType, class MoleculesType>
+class CommandSetColorTopology : public LineCommandBase<IngredientsType, MoleculesType>
+{
+public:
+	virtual ~CommandSetColorTopology(){};
+
+    typedef uint32_t NodeIdx;
+    typedef std::map<NodeIdx, int> Nodelist;
+    typedef std::map<NodeIdx, Nodelist> Graph;
+    //typedef std::pair<NodeIdx, Nodelist> Node;
+    typedef std::pair<int, NodeIdx> Edge; //! (tentative distance, idxNode)
+    typedef std::vector<NodeIdx> NodeVector;
+
+    void dijkstra(Graph &graph, NodeIdx source, Nodelist &distance);
+
+    void findCentersOfTree(Graph &graph,  Nodelist degreeNodes, NodeVector &centerNodes);
+
+	virtual std::string executeLineCommand(IngredientsType& ingredients, MoleculesType& molecules_type, std::string& _commandLine)
+	{
+		//std::cout << "!SetColor in CommandSetColorLinks " << std::endl;
+		std::vector<std::string> vex = LineCommandBase<IngredientsType, MoleculesType>::tokenize2Parameter(_commandLine, ':', '=');
+
+		//command has 3 tokens
+		if(vex.size() !=3 )
+			return std::string("error in command !setColorTopology");
+
+        float redStart, greenStart, blueStart;
+        readColor( vex[1], &redStart, &greenStart, &blueStart, "!setColorTopology (start)" );
+        float redEnd, greenEnd, blueEnd;
+        readColor( vex[2], &redEnd, &greenEnd, &blueEnd, "!setColorTopology (end)" );
+
+
+
+		/*  ################################################################  */
+
+		// if the coloring should be calculated using the systems larges topological distance, replace MonomerGroupsVector molecules_type  by ingredients and the true index by the monomer index
+		// do the coloring groupwise
+		for(uint32_t groupIdx=0; groupIdx<molecules_type.size(); groupIdx++ ){
+
+			//typedef std::map<NodeIdx, Nodelist> Graph;
+			Graph treeGraph;
+			//typedef std::map<NodeIdx, int> Nodelist;
+			Nodelist  degreeNode; // Degree of node
+			for( uint32_t k=0; k<molecules_type[groupIdx].size(); k++){
+				// get the index from the group
+				int32_t monoIdx(molecules_type[groupIdx].trueIndex(k));
+				for( uint32_t link=0; link< ingredients.getMolecules().getNumLinks(monoIdx); link++){
+					// connect from idxAA to idxBB with value ZZ
+					// all (symmetric) connections
+					treeGraph[monoIdx][ingredients.getMolecules().getNeighborIdx(monoIdx, link)]=1;
+				}
+				// fill with degree of nodes
+				degreeNode[monoIdx]=ingredients.getMolecules().getNumLinks(monoIdx);
+			}
+
+			// calculate eccentricity of graph for all nodes
+			std::cout << "Calculate eccentricity can take time..." << std::endl;
+			std::map<NodeIdx, int> eccentricity;
+			//std::map<NodeIdx, Nodelist> distance;
+
+			for( uint32_t k=0; k<molecules_type[groupIdx].size(); k++)
+			{
+				NodeIdx startNode = molecules_type[groupIdx].trueIndex(k);
+				Nodelist topo_distance;
+				dijkstra(treeGraph, startNode, topo_distance);
+
+				int maxTopologicalDistance = 0;
+
+				for(Nodelist::iterator it=topo_distance.begin(); it!=topo_distance.end(); ++it)
+				{
+					//std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
+					//distance[startNode][it->first] = it->second;
+
+					if(maxTopologicalDistance < it->second)
+						maxTopologicalDistance=it->second;
+				}
+
+				eccentricity[startNode]=maxTopologicalDistance;
+				std::cout<< startNode << " -> eccentricity: " << eccentricity[startNode] <<std::endl;
+			}
+
+			// calculate the radius of the graph = min eccentricity
+			int radiusGraph = std::numeric_limits<int>::max();
+
+			for (std::map<NodeIdx, int>::iterator it_ecc=eccentricity.begin(); it_ecc!=eccentricity.end(); ++it_ecc)
+			{
+				if(it_ecc->second < radiusGraph)
+					radiusGraph = it_ecc->second;
+			}
+			std::cout << "Radius Graph = " << radiusGraph <<std::endl;
+
+			// calculate center nodes: eccentricity[center] == radiusGraph
+			NodeVector centerGraph;
+			for (std::map<NodeIdx, int>::iterator it_ecc=eccentricity.begin(); it_ecc!=eccentricity.end(); ++it_ecc)
+			{
+				if(it_ecc->second == radiusGraph)
+					centerGraph.push_back(it_ecc->first);
+			}
+
+			std::cout << "Center Graph = ( ";
+			for(NodeVector::iterator it_center=centerGraph.begin(); it_center!=centerGraph.end(); ++it_center){
+				std::cout << *it_center << " : ";
+			}
+			std::cout << " )" << std::endl;
+
+			// calculate the diameter of the graph = max eccentricity
+			int diameterGraph = std::numeric_limits<int>::min();
+
+			for (std::map<NodeIdx, int>::iterator it_ecc=eccentricity.begin(); it_ecc!=eccentricity.end(); ++it_ecc)
+			{
+				if(diameterGraph < it_ecc->second)
+					diameterGraph = it_ecc->second;
+			}
+			std::cout << "Diameter Graph = " << diameterGraph <<std::endl;
+
+
+			// pick an arbitrary center node
+			{
+			NodeIdx startNode = centerGraph.at(0);
+			Nodelist topo_distance;
+			dijkstra(treeGraph, startNode, topo_distance);
+
+			int maxTopologicalDistance = 0;
+
+			for(Nodelist::iterator it=topo_distance.begin(); it!=topo_distance.end(); ++it)
+			{
+				//find the maximum topological distance from the tree center
+				if(maxTopologicalDistance < it->second)
+					maxTopologicalDistance=it->second;
+			}
+
+			std::cout<< startNode << " -> max center distance " << maxTopologicalDistance <<std::endl;
+
+
+			/*
+
+			//finding the center of the tree (either one or two)
+			//typedef std::vector<NodeIdx> NodeVector;
+			NodeVector centerNodes;
+			findCentersOfTree(treeGraph, degreeNode, centerNodes);
+
+			//calculate the topological distance of center to all nodes and fill histogram
+			NodeVector::iterator itv;
+
+			for(itv=centerNodes.begin(); itv!=centerNodes.end(); ++itv){
+				NodeIdx startNode = (*itv);
+
+
+            	// idx -> distance from center
+	        	Nodelist topo_distance;
+	        	dijkstra(treeGraph, startNode, topo_distance);
+	
+            	int maxTopologicalDistance = 0;
+
+
+	       		Nodelist::iterator it;
+	       		for(it=topo_distance.begin(); it!=topo_distance.end(); ++it){
+            	    //find the maximum topological distance from the tree center
+            	    if(maxTopologicalDistance < it->second)
+            	        maxTopologicalDistance=it->second;
+            	}
+
+
+	        std::cout << "startNode -> node => distance" <<std::endl;
+			 */
+
+
+
+              //color the structure
+              for(Nodelist::iterator it=topo_distance.begin(); it!=topo_distance.end(); ++it){
+
+	       		//  std::cout<< startNode << " -> " << it->first << "  => "<<it->second<<std::endl;
+
+                  // red part
+                  double redFraction = redStart + (redEnd-redStart)*it->second/(1.0*maxTopologicalDistance);
+
+                  // green part
+                  double greenFraction = greenStart + (greenEnd-greenStart)*it->second/(1.0*maxTopologicalDistance);
+
+                  // blue part
+                  double blueFraction = blueStart + (blueEnd-blueStart)*it->second/(1.0*maxTopologicalDistance);
+
+
+                  ingredients.modifyMolecules()[it->first].setColor( redFraction ,greenFraction , blueFraction);
+              }
+
+
+
+
+
+	      	}
+		} // end loop monomerGroups
+
+
+		return std::string("apply color to all monomers with numTopology");
+	}
+};
+
+template<class IngredientsType, class MoleculesType>
+void CommandSetColorTopology<IngredientsType, MoleculesType>::findCentersOfTree(Graph &graph, Nodelist degreeNodes, NodeVector &centerNodes){
+
+	std::queue <NodeIdx> queueLeaves; // Queue for algorithm holding (reduced) leaves
+	std::queue <NodeIdx> queueNextLeaves; // Queue for algorithm holding next (reduced) leaves
+	std::queue <NodeIdx> tmpOldLeaves; // Queue for algorithm holding (reduced) leaves
+
+	// Fill and start from leaves
+
+	Nodelist::iterator it;
+	for(it=degreeNodes.begin(); it!=degreeNodes.end(); ++it)
+	{
+	        int degreeOfNode = it->second;
+	        NodeIdx labelNode = it->first;
+
+	        if (degreeOfNode == 1)
+	        {
+	        	queueLeaves.push(labelNode);
+	        }
+	}
+
+	NodeIdx Seperator = -1;
+
+	queueLeaves.push(Seperator);
+
+	//  while ( (queueLeaves.front()!=Seperator)||(queueLeaves.size() > 2) ) {
+	while ( (queueLeaves.size() > 0) ) {
+		  NodeIdx node = queueLeaves.front();
+		  queueLeaves.pop();
+
+		  if( node == Seperator)
+		  {
+			  if(queueNextLeaves.empty())
+				  break;
+
+			 // std::cout << "next iteration: " << node << std::endl;
+			  tmpOldLeaves = queueNextLeaves;
+			  queueLeaves = queueNextLeaves;
+
+			  if(queueNextLeaves.size() >0)
+				  queueLeaves.push(Seperator);
+
+			  queueNextLeaves=std::queue <NodeIdx>();
+
+			  continue;
+		  }
+
+
+	 	      int dN_old = degreeNodes[node];
+
+	 	      degreeNodes[node]--;
+
+	 	     // new subgraph of all neighbors
+	 	     Nodelist tempgraph=graph[node];
+
+	 	     // connected nodes
+
+	 	    // std::cout << "connected nodes from: " << node << std::endl;
+
+	 	     Nodelist::iterator it;
+	 	     for(it=tempgraph.begin(); it!=tempgraph.end(); ++it){
+
+	 	    //	std::cout << it->first << " with degree: " << degreeNodes[it->first];
+
+	 	    	 if(degreeNodes[it->first] > 0)
+	 	    	 {
+	 	    		degreeNodes[it->first]--;
+
+	 	    	//	std::cout << " reduced to degree: " << degreeNodes[it->first];
+	 	    	 }
+
+	 	    	 if(degreeNodes[it->first] == 1)
+	 	    	 {
+	 	    		//queueLeaves.push(it->first);
+	 	    		queueNextLeaves.push(it->first);
+
+	 	    	//	std::cout << " added to queue the idx: " << (it->first);
+	 	    	 }
+
+	 	    	//std::cout << std::endl;
+	 	     }
+
+
+	 	  }
+
+	std::cout << "center queue contains: ";
+		  while (!tmpOldLeaves.empty())
+		  {
+			  centerNodes.push_back(tmpOldLeaves.front());
+			  std::cout << ' ' <<  tmpOldLeaves.front();
+			  tmpOldLeaves.pop();
+		  }
+		  std::cout << '\n';
+}
+
+template<class IngredientsType, class MoleculesType>
+void CommandSetColorTopology<IngredientsType, MoleculesType>::dijkstra(Graph &graph, NodeIdx source, Nodelist &distance){
+
+	distance.clear(); //! clear all tentative distance information
+
+	//! list of all nodes to be visit and addressed already with least distance on top
+  std::priority_queue<Edge, std::vector<Edge>, std::greater<Edge> > queueNode;
+
+  // starting node with tentative distance=0, starting node = source
+  queueNode.push( Edge(0, source) );
+
+  while(!queueNode.empty()){
+
+	  //get the element with least tentative distance
+    Edge tmped=queueNode.top();
+
+    // access the node index
+    NodeIdx tmpnl=tmped.second;
+
+    // removes the top element
+    queueNode.pop();
+
+    // if the node never visited before
+    if(distance.count(tmpnl)==0){
+
+    	// tentative distance to the recent node
+      int dist=tmped.first;
+
+      // set the tentative distance to the node
+      distance[tmpnl]=dist;
+
+      // new subgraph of all neighbors
+      Nodelist tempgraph=graph[tmpnl];
+
+      Nodelist::iterator it;
+      for(it=tempgraph.begin(); it!=tempgraph.end(); ++it){
+        int distint=it->second;
+        NodeIdx distlabel=it->first;
+        queueNode.push(Edge(dist+distint, distlabel));
+      }
+
+    }
+  }
+
+}
 
 template<class IngredientsType, class MoleculesType>
 class CommandSetVisible : public LineCommandBase<IngredientsType, MoleculesType>
@@ -585,41 +916,8 @@ public:
 		if(ccVis.fail()){
 			return std::string("error in command !setColorVisibility: Visibility");
 		}
-
-		//get color information
-		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
-
-		if(color.size() !=3 )
-			return std::string("error in command !setColorVisibility: Color");
-
-
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
-
-		std::istringstream ccRed(color[0]);
-		ccRed >> red;
-
-		//first mono index is wrong
-		if(ccRed.fail()){
-			return std::string("error in command !setColorVisibility:red color");
-		}
-
-		std::istringstream ccGreen(color[1]);
-		ccGreen >> green;
-
-		//first mono index is wrong
-		if(ccGreen.fail()){
-			return std::string("error in command !setColorVisibility:green color");
-		}
-
-		std::istringstream ccBlue(color[2]);
-		ccBlue >> blue;
-
-		//first mono index is wrong
-		if(ccBlue.fail()){
-			return std::string("error in command !setColorVisibility:blue color");
-		}
+        float red, green, blue;
+        readColor( vex[2], &red, &green, &blue, "!setColorVisibility" );
 
 
 		for(uint32_t i = 0; i < ingredients.modifyMolecules().size(); i++)
@@ -743,43 +1041,8 @@ public:
 		{
 			return std::string("error in command !setColorGroups: Groups exceed range");
 		}
-
-		//get color information
-		std::vector<std::string> color = LineCommandBase<IngredientsType, MoleculesType>::tokenize3Parameter(vex[2], '(', ',' , ')');
-
-		if(color.size() !=3 )
-			return std::string("error in command !setColorGroups:color");
-
-
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
-
-		std::istringstream ccRed(color[0]);
-		ccRed >> red;
-
-		//first mono index is wrong
-		if(ccRed.fail()){
-			return std::string("error in command !setColorGroups:red color");
-		}
-
-		std::istringstream ccGreen(color[1]);
-		ccGreen >> green;
-
-		//first mono index is wrong
-		if(ccGreen.fail()){
-			return std::string("error in command !setColorGroups:green color");
-		}
-
-		std::istringstream ccBlue(color[2]);
-		ccBlue >> blue;
-
-		//first mono index is wrong
-		if(ccBlue.fail()){
-			return std::string("error in command !setColorGroups:blue color");
-		}
-
-
+        float red, green, blue;
+        readColor( vex[2], &red, &green, &blue, "!setColorGroups" );
 		for(size_t m=0; m< molecules_type[group].size(); ++m){
 			ingredients.modifyMolecules()[molecules_type[group].trueIndex(m)].setColor( red ,green , blue);
 
@@ -1200,12 +1463,13 @@ public:
 		return std::string("known commands:\n"
 				"!setColor:idx1-idx2=(r,g,b)\n"
 				"!setColor:all=(r,g,b)\n"
+				"!setColor:BG=(r,g,b)\n"
 				"!setColorAttributes:att=(r,g,b)\n"
 				"!setColorLinks:numLinks=(r,g,b)\n"
 				"!setColorVisibility:vis=(r,g,b)\n"
 				"!setColorGroups:idxGroup=(r,g,b)\n"
 				"!setColorGroupsRandom\n"
-				"!setColor:BG=(r,g,b)\n"
+				"!setColorTopology:(rS,gS,bS)=(rE,gE,bE)\n"
 				"!setVisible:idx1-idx2=vis\n"
 				"!setVisible:all=vis\n"
 				"!setVisibleAttributes:att=vis\n"
@@ -1217,9 +1481,7 @@ public:
 				"!setRadiusLinks:numLinks=radius\n"
 				"!setRadiusGroups:idxGroup=radius\n"
 				"!setAttributeColorMap:att=(red,green,blue)\n"
-				"!setSyncAttributesON:0/1\n" );
+				"!setSyncAttributesON:0/1\n" 
+				"!exit\n");
 	}
 };
-
-
-#endif /* LEMONADEVIEWERLINECOMMAND_H_ */

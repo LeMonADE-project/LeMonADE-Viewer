@@ -1,0 +1,3 @@
+[submodule "extern/LeMonADE"]
+	path = extern/LeMonADE
+	url = https://github.com/LeMonADE-project/LeMonADE.git
