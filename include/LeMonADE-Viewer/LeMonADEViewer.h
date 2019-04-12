@@ -505,13 +505,13 @@ void initialize()
 
 		I_CommandInput->tooltip("!setColor:idxMono1-idxMono2=(red,green,blue)\n"
 				"!setColor:all=(red,green,blue)\n"
-                "!setColor:BG=(red,green,blue)\n"
+				"!setColor:BG=(red,green,blue)\n"
 				"!setColorAttributes:att=(red,green,blue)\n"
 				"!setColorLinks:numLinks=(red,green,blue)\n"
 				"!setColorVisibility:vis=(red,green,blue)\n"
 				"!setColorGroups:idxGroup=(red,green,blue)\n"
 				"!setColorGroupsRandom\n"
-                "!setColorTopology:(redCenter,greenCenter,blueCenter)=(redEnd,greenEnd,blueEnd)\n"
+				"!setColorTopology:(redCenter,greenCenter,blueCenter)=(redEnd,greenEnd,blueEnd)\n"
 				"!setVisible:idxMono1-idxMono2=vis\n"
 				"!setVisible:all=vis\n"
 				"!setVisibleAttributes:att=vis\n"
@@ -599,6 +599,8 @@ void initialize()
 	
 	CommandLineMap["!setSyncAttributesON"] = new CommandSetSyncAttributeColor<IngredientsType, MonomerGroupVector>();
 	CommandLineMap["!setAttributeColorMap"] = new CommandSetAttributeColorMap<IngredientsType, MonomerGroupVector>();
+	
+	CommandLineMap["!setBondWidth"] = new CommandSetBondWidth<IngredientsType,MonomerGroupVector>();
 
 	CommandLineMap["!help"] = new CommandGetHelp<IngredientsType, MonomerGroupVector>();
 
