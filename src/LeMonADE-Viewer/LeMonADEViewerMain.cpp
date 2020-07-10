@@ -188,7 +188,7 @@ int main( int argc, char * argv[] )
         //just as in the previous examples, we quickly define the features and basic
         //monomer type and create an instance of the thus defined system.
 
-        typedef LOKI_TYPELIST_3(FeatureMoleculesIO,FeatureVisualize,FeatureAttributes) Features;
+        typedef LOKI_TYPELIST_3(FeatureMoleculesIO,FeatureVisualize,FeatureAttributes< >) Features;
 
         // in most cases the number of connections of a monomer dosn't exceed 8 bonds
         const uint max_bonds=20;
