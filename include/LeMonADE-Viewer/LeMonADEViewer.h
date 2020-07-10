@@ -94,18 +94,19 @@ public:
 
 	// constructor
 	LeMonADEViewer
-    (
-        IngredientsType & _ingredients,
-        std::string const & filename,
-        bool const rnoGui = false
-    )
-    : window( NULL ), winOpenGL( NULL ), winAbout( NULL ),
-      ingredients( _ingredients ),
-      ReadBfmFile( filename, _ingredients, UpdaterReadBfmFile<IngredientsType>::READ_STEPWISE ),
-      delayTimeFrames( 0.25 ),
-      smoothNumber( 0 ),
-      FrameNumber( 0 ),
-      noGui( rnoGui )
+	(
+	    IngredientsType & _ingredients,
+	    std::string const & filename,
+	    bool const rnoGui = false
+	)
+	: window( NULL ), winOpenGL( NULL ), winAbout( NULL ),
+	  ingredients( _ingredients ),
+	  ReadBfmFile( filename, _ingredients, UpdaterReadBfmFile<IngredientsType>::READ_STEPWISE ),
+	  delayTimeFrames( 0.25 ),
+	  smoothNumber( 0 ),
+	  FrameNumber( 0 ),
+	  noGui( rnoGui ), 
+	  SyncAttributes(false)
 	{
 		// construct the cropped filename without path and file ending
 		std::string fn=filename;
@@ -116,7 +117,7 @@ public:
 	}
 
 	virtual ~LeMonADEViewer()
-    {
+	{
 		if ( window    != NULL ) { delete window   ; window    = NULL; }
 		if ( winOpenGL != NULL ) { delete winOpenGL; winOpenGL = NULL; }
 		if ( winAbout  != NULL ) { delete winAbout ; winAbout  = NULL; }
@@ -190,8 +191,15 @@ private:
 	//!< Reduced filename without path and white-spaces for POV-Ray output
 	std::string cropFilename;
 
-    bool const noGui;
+	
+	//! choose if attributes are updated before each mcs step 
+	bool SyncAttributes;
+	//! color map for attributes
+	std::map<uint32_t,VectorFloat3> AttributeColor;
+
+	bool const noGui;
 public:
+
 
     inline IngredientsType const & getIngredients( void ) const { return this->ingredients; };
 
@@ -415,9 +423,9 @@ void initialize()
 		Ch_PropertySchemeChoice->down_box(FL_BORDER_BOX);
 
 		//! @todo add coloring for other schemes
-		//Ch_PropertySchemeChoice->add("NONE");
+		Ch_PropertySchemeChoice->add("NONE");
 		Ch_PropertySchemeChoice->add("ColorAtt");
-		//Ch_PropertySchemeChoice->add("ColorLinks");
+// 		Ch_PropertySchemeChoice->add("ColorLinks");
 		//Ch_PropertySchemeChoice->add("ColorGroup");
 		Ch_PropertySchemeChoice->value(0);
 
@@ -443,6 +451,10 @@ void initialize()
 				Ch_PropertyValueChoice->add((ss.str()).c_str());
 			}
 			Ch_PropertyValueChoice->value(0);
+			
+			VectorFloat3 DefaultColorForMap(0.5f,0.5f,0.5f);
+			for (std::set<int>::iterator it=myset.begin(); it != myset.end(); it++)
+			  ingredients.addAttributeColor(*it,DefaultColorForMap);
 
 		}
 
@@ -493,13 +505,13 @@ void initialize()
 
 		I_CommandInput->tooltip("!setColor:idxMono1-idxMono2=(red,green,blue)\n"
 				"!setColor:all=(red,green,blue)\n"
-                "!setColor:BG=(red,green,blue)\n"
+				"!setColor:BG=(red,green,blue)\n"
 				"!setColorAttributes:att=(red,green,blue)\n"
 				"!setColorLinks:numLinks=(red,green,blue)\n"
 				"!setColorVisibility:vis=(red,green,blue)\n"
 				"!setColorGroups:idxGroup=(red,green,blue)\n"
 				"!setColorGroupsRandom\n"
-                "!setColorTopology:(redCenter,greenCenter,blueCenter)=(redEnd,greenEnd,blueEnd)\n"
+				"!setColorTopology:(redCenter,greenCenter,blueCenter)=(redEnd,greenEnd,blueEnd)\n"
 				"!setVisible:idxMono1-idxMono2=vis\n"
 				"!setVisible:all=vis\n"
 				"!setVisibleAttributes:att=vis\n"
@@ -510,6 +522,8 @@ void initialize()
 				"!setRadiusAttributes:att=radius\n"
 				"!setRadiusLinks:numLinks=radius\n"
 				"!setRadiusGroups:idxGroup=radius\n"
+				"!setAttributeColorMap:att=(red,green,blue)\n"
+				"!setSyncAttributesON:0/1\n" 
 				"!exit\n");
 
 		I_CommandInput->when(FL_WHEN_ENTER_KEY|FL_WHEN_NOT_CHANGED);
@@ -582,6 +596,11 @@ void initialize()
 	CommandLineMap["!setRadiusAttributes"] = new CommandSetRadiusAttributes<IngredientsType, MonomerGroupVector>();
 	CommandLineMap["!setRadiusLinks"] = new CommandSetRadiusLinks<IngredientsType, MonomerGroupVector>();
 	CommandLineMap["!setRadiusGroups"] = new CommandSetRadiusGroups<IngredientsType, MonomerGroupVector>();
+	
+	CommandLineMap["!setSyncAttributesON"] = new CommandSetSyncAttributeColor<IngredientsType, MonomerGroupVector>();
+	CommandLineMap["!setAttributeColorMap"] = new CommandSetAttributeColorMap<IngredientsType, MonomerGroupVector>();
+	
+	CommandLineMap["!setBondWidth"] = new CommandSetBondWidth<IngredientsType,MonomerGroupVector>();
 
 	CommandLineMap["!help"] = new CommandGetHelp<IngredientsType, MonomerGroupVector>();
 
@@ -621,7 +640,11 @@ static void Timer_CB(void *userdata) {
 private:
 
 
-//this function should be called by all members which read a conformation
+
+/*!@fn  generalPlayFunction
+ * @brief calls smoothing of coordinates and adds current frame number
+ * @details this function should be called by all members which read a conformation
+ */
 void generalPlayFunction();
 
 // these functions are work around to handle the old non-OOP-FLTK-interfaces
@@ -637,85 +660,156 @@ void real_callback(Fl_Widget* w) {
 }
 */
 
-// povray button
+/*!@fn cb_povray
+ * @brief adds a button which produces a povray 
+ */
 static void cb_povray( Fl_Button*, void* );
 inline void cb_povray_i( Fl_Button*, void* );
 
-// license window
+/*!@fn cb_license
+ * @brief pops up a window with short manual and license information
+ */
 static void cb_license( Fl_Button*, void* );
 inline void cb_license_i( Fl_Button*, void* );
 
-// color chooser button
+/*!@fn cb_colorchooser
+ * @brief choose a color of some predefined colors
+ */
 static void cb_colorchooser( Fl_Button*, void* );
 inline void cb_colorchooser_i( Fl_Button*, void* );
 
-// quit button
+/*!@fn cb_quit
+ * @brief button to quit 
+ */
 static void cb_quit( Fl_Button*, void* );
 inline void cb_quit_i( Fl_Button*, void* );
 
-// show bonds button
+/*!@fn cb_showbonds
+ * @brief box to enable/disable bond drawing
+ */
 static void cb_showbonds( Fl_Check_Button*, void* );
 inline void cb_showbonds_i( Fl_Check_Button*);
 
-// apply periodicity
+/*!@fn cb_foldback
+ * @brief folds back all monomers into the box (no images around)
+ */
 static void cb_foldback( Fl_Check_Button*, void* );
 inline void cb_foldback_i( Fl_Check_Button*);
 
+/*!@fn  cb_changeMonomerSize
+ * @brief choose size of monomer cubes or spheres 
+ */
 static void cb_changeMonomerSize( Fl_Counter*, void* );
 inline void cb_changeMonomerSize_i(  Fl_Counter*);
 
+/*!@fn cb_changeBondWidth
+ * @brief change the diameter of the connecting cylinder used for bonds
+ */
 static void cb_changeBondWidth( Fl_Counter*, void* );
 inline void cb_changeBondWidth_i(  Fl_Counter*);
 
+/*!
+ * @fn cb_changeReverseWindingStart
+ * @brief go to first config
+ * @todo cannot apply add_bonds,remove 
+ */
 static void cb_changeReverseWindingStart( Fl_Button*, void* );
 inline void cb_changeReverseWindingStart_i(  Fl_Button*);
 
+/*!@fn cb_changeReverseWinding
+ * @brief go one config back
+ */
 static void cb_changeReverseWinding( Fl_Button*, void* );
 inline void cb_changeReverseWinding_i(  Fl_Button*);
 
+/*!@fn cb_changeForwardWinding
+ * @brief go one config further
+ */
 static void cb_changeForwardWinding( Fl_Button*, void* );
 inline void cb_changeForwardWinding_i(  Fl_Button*);
 
+/*!@fn cb_changeForwardWindingEnd
+ * @brief go to last config
+ */
 static void cb_changeForwardWindingEnd( Fl_Button*, void* );
 inline void cb_changeForwardWindingEnd_i(  Fl_Button*);
 
+/*!@fn  cb_changePlay
+ * @brief Play/Pause
+ */
 static void cb_changePlay( Fl_Light_Button*, void* );
 inline void cb_changePlay_i(  Fl_Light_Button*);
 
+/*!@fn cb_changeDelayFrames
+ * @brief change time between successive frames 
+ */
 static void cb_changeDelayFrames( Fl_Counter*, void* );
 inline void cb_changeDelayFrames_i(  Fl_Counter*);
 
+/*!@fn cb_smoothing
+ * @brief box for turning on the smoothing of coordinates
+ */
 static void  cb_smoothing( Fl_Check_Button*, void* );
 inline void  cb_smoothing_i( Fl_Check_Button*);
 
+/*!@fn cb_smoothingSpinner
+ * @brief choose how many coordinates are used for the smoothed coordinate
+ */
 static void  cb_smoothingSpinner( Fl_Spinner*, void* );
 inline void  cb_smoothingSpinner_i( Fl_Spinner*);
 
+/*!@fn  s_translateDXSpinner
+ * @brief move complete system in x direction 
+ */
 static void  s_translateDXSpinner( Fl_Spinner*, void* );
 inline void  s_translateDXSpinner_i( Fl_Spinner*);
 
+/*!@fn  s_translateDYSpinner
+ * @brief move complete system in y direction 
+ */
 static void  s_translateDYSpinner( Fl_Spinner*, void* );
 inline void  s_translateDYSpinner_i( Fl_Spinner*);
 
+/*!@fn  s_translateDZSpinner
+ * @brief move complete system in z direction 
+ */
 static void  s_translateDZSpinner( Fl_Spinner*, void* );
 inline void  s_translateDZSpinner_i( Fl_Spinner*);
 
+/*!@fn  cb_drawSpheres
+ * @brief box to switch between cubes and spheres
+ */
 static void  cb_drawSpheres( Fl_Check_Button*, void* );
 inline void  cb_drawSpheres_i( Fl_Check_Button*);
 
+/*!@fn  s_subdivision
+ * @brief 
+ */
 static void  s_subdivision( Fl_Spinner*, void* );
 inline void  s_subdivision_i( Fl_Spinner*);
 
+/*!@fn  ch_propertycolorchooser
+ * @brief choose property to change 
+ * @todo implement more than a colo
+ */
 static void  ch_propertycolorchooser(Fl_Choice*, void*);
 inline void  ch_propertycolorchooser_i(Fl_Choice*);
 
+/*!@fn  cb_changeCommandInput
+ * @brief input via 'commmand line' to change some properties
+ */
 static void  cb_changeCommandInput( Fl_Input*, void* );
 inline void  cb_changeCommandInput_i( Fl_Input*);
 
+/*!@fn  cb_changeFrameInput
+ * @brief choose another frame number
+ */
 static void  cb_changeFrameInput( Fl_Int_Input*, void* );
 inline void  cb_changeFrameInput_i( Fl_Int_Input*);
 
-
+/*!@fn  calculateSmoothCoodinates
+ * @brief calculate the smoothed coordinates of all monomers and sets them 
+ */
 void calculateSmoothCoodinates();
 
 public:
@@ -731,9 +825,9 @@ bool execute()
 	std::cout << "*******************************************\n"
 			<< "monte carlo step " << ingredients.getMolecules().getAge()  << std::endl;
 
-	int boxX = this->ingredients.getBoxX();
-	int boxY = this->ingredients.getBoxY();
-	int boxZ = this->ingredients.getBoxZ();
+// 	int boxX = this->ingredients.getBoxX();
+// 	int boxY = this->ingredients.getBoxY();
+// 	int boxZ = this->ingredients.getBoxZ();
 
 	for (;;) {
 		if (winOpenGL->visible()) // returns immediately
@@ -744,7 +838,6 @@ bool execute()
 		{
 			if (!Fl::wait(10)) break;
 		}
-
 		winOpenGL->redraw();
 
 		if (Fl::readqueue()==winOpenGL) break;
@@ -752,7 +845,6 @@ bool execute()
 
 	return Fl::run();
 }
-
 
 };
 
@@ -767,7 +859,12 @@ void LeMonADEViewer<IngredientsType>::generalPlayFunction()
 
 	std::stringstream sd("");
 	sd << ReadBfmFile.getRecentFrameCount();
-
+	if (ingredients.syncAttributeColorON()){ 
+	      for ( size_t i=0; i < ingredients.getMolecules().size() ;i++ )
+	      {
+		ingredients.modifyMolecules()[i].setColor(ingredients.getAttributeColor( ingredients.getMolecules()[i].getAttributeTag() ) );
+	      }
+	}
 	I_FrameInput->value(sd.str().c_str());
 
 }
@@ -1210,48 +1307,54 @@ void LeMonADEViewer<IngredientsType>::ch_propertycolorchooser(Fl_Choice* obj, vo
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::ch_propertycolorchooser_i(Fl_Choice* obj)
 {
-	//std::cout << "ch_propertycolorchooser_i" << std::endl;
-	//std::cout << "State " <<  int(Ch_PropertyColorChoice->value()) << std::endl;
-
+    //std::cout << "ch_propertycolorchooser_i" << std::endl;
+    //std::cout << "State " <<  int(Ch_PropertyColorChoice->value()) << std::endl;
+    int valueCh_PropertySchemeChoice = Ch_PropertySchemeChoice->value();
+    if (valueCh_PropertySchemeChoice == 1 )
+    {
+	// color in the list
 	int valueCh_PropertyColorChoice = Ch_PropertyColorChoice->value();
-
+	//attribute tag as string 
 	std::string stringCh_PropertyValueChoice = Ch_PropertyValueChoice->text();
 
 	// replace this by a general scheme
 	std::string command = "!setColorAttributes";
 
-    std::string line = "!setColorAttributes:"+stringCh_PropertyValueChoice+"=";
+	std::string line = "!setColorAttributes:"+stringCh_PropertyValueChoice+"=";
 
-    if(valueCh_PropertyColorChoice == 1)
-    	line += "(1,1,1)";
+	if(valueCh_PropertyColorChoice == 1)
+	    line += "(1,1,1)";
 
-    if(valueCh_PropertyColorChoice == 2)
-    	line += "(0,0,0)";
+	if(valueCh_PropertyColorChoice == 2)
+	    line += "(0,0,0)";
 
-    if(valueCh_PropertyColorChoice == 3)
-    	line += "(1,0,0)";
+	if(valueCh_PropertyColorChoice == 3)
+	    line += "(1,0,0)";
 
-    if(valueCh_PropertyColorChoice == 4)
-    	line += "(0,1,0)";
+	if(valueCh_PropertyColorChoice == 4)
+	    line += "(0,1,0)";
 
-    if(valueCh_PropertyColorChoice == 5)
-    	line += "(0,0,1)";
+	if(valueCh_PropertyColorChoice == 5)
+	    line += "(0,0,1)";
 
-    if(valueCh_PropertyColorChoice == 6)
-    	line += "(1,1,0)";
+	if(valueCh_PropertyColorChoice == 6)
+	    line += "(1,1,0)";
 
-    if(valueCh_PropertyColorChoice == 7)
-    	line += "(1,0,1)";
+	if(valueCh_PropertyColorChoice == 7)
+	    line += "(1,0,1)";
 
-    if(valueCh_PropertyColorChoice == 8)
-    	line += "(0,1,1)";
+	if(valueCh_PropertyColorChoice == 8)
+	    line += "(0,1,1)";
 
-    if(valueCh_PropertyColorChoice == 9)
-    	line += "(1,0.6,0)";
+	if(valueCh_PropertyColorChoice == 9)
+	    line += "(1,0.6,0)";
 
 	std::cout << line << std::endl;
-
-    executeCommand( line );
+	// execute the coloring
+	executeCommand( line );
+    }
+    else 
+      std::cout <<"No scheme specified!" <<std::endl;
 }
 
 
@@ -1264,10 +1367,9 @@ void LeMonADEViewer<IngredientsType>::cb_changeCommandInput( Fl_Input* obj, void
 template <class IngredientsType>
 void LeMonADEViewer<IngredientsType>::cb_changeCommandInput_i( Fl_Input* obj)
 {
-
-	std::string const line( I_CommandInput->value() );
+    std::string const line( I_CommandInput->value() );
     executeCommand( line );
-	/*
+	
 	//  maybe useful for animation purpose
 	if(line==std::string("!rendering"))
 	{
@@ -1299,14 +1401,10 @@ void LeMonADEViewer<IngredientsType>::cb_changeCommandInput_i( Fl_Input* obj)
 			povrayCommand << " +H";
 			povrayCommand << winOpenGL->h();
 			povrayCommand << " -D -P ";
-
-
 			system (povrayCommand.str().c_str());
-
 		}
-
 	}
-	*/
+	
 }
 
 template <class IngredientsType>

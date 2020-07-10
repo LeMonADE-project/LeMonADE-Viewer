@@ -36,13 +36,16 @@ along with LeMonADE-Viewer.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <LeMonADE/core/ConfigureSystem.h>
 #include <LeMonADE/core/Ingredients.h>
-#include <LeMonADE/feature/FeatureMoleculesIO.h>
+#include <LeMonADE/feature/FeatureMoleculesIOUnsaveCheck.h>
 #include <LeMonADE/feature/FeatureAttributes.h>
+// #include <LeMonADE/feature/FeatureChangeAttributes.h>
 #include <LeMonADE/utility/RandomNumberGenerators.h>
 
-#include "LeMonADE-Viewer/LeMonADEViewer.h"
-#include "LeMonADE-Viewer/FeatureVisualize.h"
+#include <LeMonADE-Viewer/LeMonADEViewer.h>
+#include <LeMonADE-Viewer/FeatureVisualize.h>
+#include <LeMonADE-Viewer/FeatureAttributeColor.h>
 #include "LeMonADE-Viewer/generatePovRayScript.h"
+
 
 
 
@@ -55,25 +58,28 @@ void printHelp( void )
     << "  --camera specify the camera position. All angles given are in degree. Phi/yaw is the horizontal and theta/pitch the vertical rotation. The last argument is the distance to the box center with the default being 2*<box size>.\n"
     << "  --help   print this help message\n"
     << "  --script Automatically execute the specified commands. See the GUI !help command for a more up-to-date list of commands\n"
-    << "      !setColor:idx1-idx2=(r,g,b)            \n"
-    << "      !setColor:all=(r,g,b)                  \n"
-    << "      !setColor:BG=(r,g,b)                   \n"
-    << "      !setColorAttributes:att=(r,g,b)        \n"
-    << "      !setColorLinks:numLinks=(r,g,b)        \n"
-    << "      !setColorVisibility:vis=(r,g,b)        \n"
-    << "      !setColorGroups:idxGroup=(r,g,b)       \n"
-    << "      !setColorGroupsRandom                  \n"
-    << "      !setColorTopology:(rS,gS,bS)=(rE,gE,bE)\n"
-    << "      !setVisible:idx1-idx2=vis              \n"
-    << "      !setVisible:all=vis                    \n"
-    << "      !setVisibleAttributes:att=vis          \n"
-    << "      !setVisibleLinks:numLinks=vis          \n"
-    << "      !setVisibleGroups:idxG1-idxG2=vis      \n"
-    << "      !setRadius:idx1-idx2=radius            \n"
-    << "      !setRadius:all=radius                  \n"
-    << "      !setRadiusAttributes:att=radius        \n"
-    << "      !setRadiusLinks:numLinks=radius        \n"
-    << "      !setRadiusGroups:idxGroup=radius       \n"
+    << "      !setColor:idx1-idx2=(r,g,b)               \n"
+    << "      !setColor:all=(r,g,b)                     \n"
+    << "      !setColor:BG=(r,g,b)                      \n"
+    << "      !setColorAttributes:att=(r,g,b)           \n"
+    << "      !setColorLinks:numLinks=(r,g,b)           \n"
+    << "      !setColorVisibility:vis=(r,g,b)           \n"
+    << "      !setColorGroups:idxGroup=(r,g,b)          \n"
+    << "      !setColorGroupsRandom                     \n"
+    << "      !setColorTopology:(rS,gS,bS)=(rE,gE,bE)   \n"
+    << "      !setVisible:idx1-idx2=vis                 \n"
+    << "      !setVisible:all=vis                       \n"
+    << "      !setVisibleAttributes:att=vis             \n"
+    << "      !setVisibleLinks:numLinks=vis             \n"
+    << "      !setVisibleGroups:idxG1-idxG2=vis         \n"
+    << "      !setRadius:idx1-idx2=radius               \n"
+    << "      !setRadius:all=radius                     \n"
+    << "      !setRadiusAttributes:att=radius           \n"
+    << "      !setRadiusLinks:numLinks=radius           \n"
+    << "      !setRadiusGroups:idxGroup=radius          \n"
+    << "      !setAttributeColorMap:att=(red,green,blue)\n"
+    << "      !setSyncAttributesON:0/1                  \n" 
+    << "      !setBondWidth:radius                      \n"
     << "  --size Window and rendered image size in pixels. Default is 800x600.\n"
     << "  --povray Don't start the GUI, just create and execute the povray script. Useful for use in scripts.\n"
     << std::endl;
@@ -184,11 +190,13 @@ int main( int argc, char * argv[] )
         if ( filename.empty() )
             filename = "testfile.bfm";
 
+
         /* start main loop or create povray script */
         //just as in the previous examples, we quickly define the features and basic
         //monomer type and create an instance of the thus defined system.
 
-        typedef LOKI_TYPELIST_3(FeatureMoleculesIO,FeatureVisualize,FeatureAttributes< >) Features;
+        //typedef LOKI_TYPELIST_3(FeatureMoleculesIO,FeatureVisualize,FeatureAttributes< >) Features;
+	typedef LOKI_TYPELIST_3(FeatureMoleculesIOUnsaveCheck,FeatureVisualize, FeatureAttributeColor) Features;
 
         // in most cases the number of connections of a monomer dosn't exceed 8 bonds
         const uint max_bonds=20;
@@ -207,24 +215,51 @@ int main( int argc, char * argv[] )
 		ShowLeMonADEViewer.initialize(); // initializes BFM file reader, FLTK window, OpenGL window, command parser
         if ( ! script.empty() )
         {
-            /* split script at ; and \n and execute each command */
-            int i1 = 0; // last char already inspected in string
-            while ( true )
-            {
-                /* advance until no delimiter, meaning skip over empty lines */
-                while ( i1 < script.size() && !( script[i1] != '\n' && script[i1] != ';' ) )
-                    ++i1;
-                if ( ! ( i1 < script.size() ) )
-                    break;
-                int i0 = i1;
-                /* one increment is guaranteed because of the above loop */
-                while ( i1 < script.size() && script[i1] != '\n' && script[i1] != ';' )
-                    ++i1;
-                std::string const command = script.substr( i0, i1-i0-1 );
-
-                /* execute command */
-                ShowLeMonADEViewer.executeCommand( command );
-            }
+	      std::ifstream in(script.c_str());
+	      bool ReadFromFile(false);
+	      std::string line;
+	      if (in.good())
+	      { 
+		ReadFromFile=true;
+		std::cout <<"Open file " << script <<std::endl;
+	      }
+	      else line=script;
+	      /* split script at ; and \n ignoring and execute each command */
+	      int i1 = 0; 
+	      while ( true )
+	      {
+		  if (ReadFromFile )
+		  { 
+		    if( ! in.eof() )
+		    {
+		      std:getline(in,line);
+		      i1=0;
+		    }
+		    else break;
+		  }
+		  if ( line[0] == '#' ) 
+		    std::cout << "Comment: " << line <<std::endl;
+		  else 
+		  {
+		      while (i1 < line.size() &&  line[i1] != '!' ) ++i1;
+		      if (i1 < line.size() )  
+		      {
+			  int i0 = i1; // start of the command 
+			  ++i1; // go to next character to be checked
+			  if ( ! ( i1 < line.size() ) )
+			  break;
+			  while (i1 < line.size() && ( line[i1] != '!')  ) ++i1;
+			  std::string command = line.substr( i0, i1-i0 );
+			  //erase whitespaces, linebreaks and semicolons from the string
+			  command.erase(std::remove_if(command.begin(), command.end(), ::isspace ),command.end());
+			  command.erase(std::remove_if(command.begin(), command.end(), [](char c ) {return (c == ';');} ),command.end());
+    // 		      std::cout << "Extracted command is: "  <<  command <<std::endl;
+			  /* execute command */
+			  ShowLeMonADEViewer.executeCommand( command );
+		      } else break ;
+		  }
+	      }
+	      if (ReadFromFile) in.close();
         }
         /* set up camera */
         if ( customCamera )
