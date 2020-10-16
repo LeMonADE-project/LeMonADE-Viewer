@@ -68,6 +68,34 @@ inline void generatePovRayScript
     << "translate <" << 0.5 * boxX << "," << 0.5 * boxY << "," << 0.5 * boxZ << ">\n"
     << "}\n"
     << "\n"
+    // output for simulation box
+    << "#macro BOXFRAME (P1, P2, S1, C1)" << std::endl
+    << "cylinder{P1,P2, S1" << std::endl
+    << "         texture{ pigment{color C1} finish {ambient 0.15 diffuse 0.85  metallic } }" << std::endl
+    << "        }" << std::endl
+    << "#end" << std::endl
+    << std::endl
+    << "// simulation box frame" << std::endl
+    << "object{ BOXFRAME (<0,0,0>,<" << boxX << ",0,0>, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    << "object{ BOXFRAME (<0,0,0>,<0," << boxY << ",0>, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    << "object{ BOXFRAME (<0,0,0>,<0,0," << boxZ << ">, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    
+    << "object{ BOXFRAME (<" << boxX << ",0,0>,<" << boxX << ",0," << boxZ << ">, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    << "object{ BOXFRAME (<" << boxX << ",0,0>,<" << boxX << "," << boxY << ",0>, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    
+    << "object{ BOXFRAME (<0,0," << boxZ << ">,<" << boxX << ",0," << boxZ << ">, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    << "object{ BOXFRAME (<0,0," << boxZ << ">,<0," << boxY << "," << boxZ << ">, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    
+    << "object{ BOXFRAME (<" << boxX << ",0," << boxZ << ">,<" << boxX << "," << boxY << "," << boxZ << ">, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    
+    << "object{ BOXFRAME (<0," << boxY << ",0>,<" << boxX << "," << boxY << ",0>, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    << "object{ BOXFRAME (<0," << boxY << ",0>,<0," << boxY << "," << boxZ << ">, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    << "object{ BOXFRAME (<0," << boxY << "," << boxZ << ">,<" << boxX << "," << boxY << "," << boxZ << ">, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    << "object{ BOXFRAME (<" << boxX << "," << boxY << ",0>,<" << boxX << "," << boxY << "," << boxZ << ">, 1, <0.8,0.8,0.8,0.7>) }" << std::endl
+    
+    << std::endl
+    << std::endl
+    << "\n"
     << "// objects (monomers)\n";
 
     // das ist jetzt die reale monomer-Position (STIMMT DAS SCHON SO?)
