@@ -3,7 +3,7 @@
 #   o\.|./o    e   xtensible     | LeMonADE: An Open Source Implementation of the
 #  o\.\|/./o   Mon te-Carlo      |           Bond-Fluctuation-Model for Polymers
 # oo---0---oo  A   lgorithm and  |
-#  o/./|\.\o   D   evelopment    | Copyright (C) 2013-2015 by
+#  o/./|\.\o   D   evelopment    | Copyright (C) 2013-2021 by
 #   o/.|.\o    E   nvironment    | LeMonADE-Viewer Principal Developers (see AUTHORS)
 #     ooo                        |
 # ---------------------------------------------------------------------------------
@@ -27,29 +27,30 @@
 #
 # Project Properties
 #
-CMAKE_MINIMUM_REQUIRED (VERSION 2.6.2)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.10.0)
 PROJECT (LeMonADE-Viewer)
 SET (APPLICATION_NAME "LeMonADE-Viewer")
 SET (APPLICATION_CODENAME "${PROJECT_NAME}")
-SET (APPLICATION_COPYRIGHT_YEARS "2015")
+SET (APPLICATION_COPYRIGHT_YEARS "2015-2021")
 SET (APPLICATION_VERSION_MAJOR 1)
 SET (APPLICATION_VERSION_MINOR 3)
-SET (APPLICATION_VERSION_PATCH 0)
+SET (APPLICATION_VERSION_PATCH 1)
 SET (APPLICATION_VERSION_TYPE SNAPSHOT)
 SET (APPLICATION_VERSION_STRING "${APPLICATION_VERSION_MAJOR}.${APPLICATION_VERSION_MINOR}.${APPLICATION_VERSION_PATCH}-${APPLICATION_VERSION_TYPE}")
 SET (APPLICATION_ID "${APPLICATION_VENDOR_ID}.${PROJECT_NAME}")
 
 
-SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC -O3")
+SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC -O3 -std=c++11 -fexpensive-optimizations -Wno-error=narrowing")
 
 #
 # Debugging Options
 #
 SET (CMAKE_VERBOSE_MAKEFILE 0) # Use 1 for debugging, 0 for release
-
+SET (CMAKE_BUILD_TYPE "Release") #default build type is Release
 #
 # Check if LEMONADE_DIR is given
 #
+if( NOT LEMONADE_DIR )
 set( LEMONADE_SUBMODULE_FOLDER "./extern/LeMonADE" )
 option( PULL_LEMONADE "If enabled LeMonADE will be downloaded and compiled in the folder ${LEMONADE_SUBMODULE_FOLDER}" ON )
 find_path( LEMONADE_INCLUDE_DIR
@@ -89,6 +90,10 @@ find_path( LEMONADE_LIBRARY_DIR
         lib
     DOC "LeMonADE library location"
 )
+else()
+    set( LEMONADE_INCLUDE_DIR "${LEMONADE_DIR}/include" )
+    set( LEMONADE_LIBRARY_DIR "${LEMONADE_DIR}/lib" )
+endif()
 if( NOT LEMONADE_INCLUDE_DIR )
     message( "LEMONADE_INCLUDE_DIR is not provided. If build fails, use -DLEMONADE_INCLUDE_DIR=/path/to/LeMonADE/headers/ or install to default location" )
 endif()

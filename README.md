@@ -23,7 +23,15 @@ For further details of LeMonADE-project see: [LeMonADE-project]
 * Install cmake (minimum version 2.6.2)
 * Install FLTK and OpenGL (devel)
 * Install POV-Ray for high resolution rendering 
-* Just do for standard compilation (program):
+* Just do for standard compilation (program) incl. download of [LeMonADE v2.2.2](https://github.com/LeMonADE-project/LeMonADE/commit/7523a6b102b5b5d6162c5ba94c618ec16168c4b3):
+
+````sh
+    # generates the application in build-directory
+    ./configure
+    make
+````
+
+* Or providing another LeMonADE library for compilation:
 
 ````sh
     # generates the application in build-directory

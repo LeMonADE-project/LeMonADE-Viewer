@@ -7,7 +7,7 @@
 |  oo---0---oo  | D   evelopment    | See: https://github.com/LeMonADE-project/LeMonADE
 |\  o/./|\.\o  /| E   nvironment    |
 | \  o/.|.\o  / | -                 |
-|  \   ooo   /  | Viewer            | Copyright (C) 2013-2015 by
+|  \   ooo   /  | Viewer            | Copyright (C) 2013-2015,2021 by
 |___\_______/___|                   | LeMonADE-Viewer Principal Developers (see AUTHORS)
 ----------------------------------------------------------------------------------
 
@@ -92,7 +92,7 @@ const std::string LeMonADEViewerAboutWin::getText() const
 
 	std::string msg=
 
-			"This is the application LeMonADE-Viewer V1.3.0.\n"
+			"This is the application LeMonADE-Viewer V1.3.1.\n"
 			"==============================================="
 			"\n"
 			"The abbreviation \"LeMonADE\" stands for \n"
